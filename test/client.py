@@ -4,8 +4,8 @@ import json
 ws = websocket.WebSocket()
 ws.connect("ws://localhost:8080/entry")
 dd = {
-	"author":"nick",
-	"body":"test"
+	"type":"nick",
+	"action":"test"
 }
 print(json.dumps(dd))
 ws.send(json.dumps(dd)) 

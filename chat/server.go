@@ -107,12 +107,12 @@ func (s *Server) Listen() {
 			log.Println("Now", len(s.clients), "clients connected.")
 			s.sendPastMessages(c)
 			id := fmt.Sprintf("%d", (*c).id)
-			s.sendAll(&Message{Login: "[Сервер]", Body: "Пользователь присоединился к чату. ID: " + id})
+			s.sendAll(&Message{Login: "[Сервер]", Text: "Пользователь присоединился к чату. ID: " + id})
 
 		// del a client
 		case c := <-s.delCh:
 			id := fmt.Sprintf("%d", (*c).id)
-			s.sendAll(&Message{Login: "[Сервер]", Body: "Пользователь вышел из чата. ID: " + id})
+			s.sendAll(&Message{Login: "[Сервер]", Text: "Пользователь вышел из чата. ID: " + id})
 			delete(s.clients, c.id)
 
 		// broadcast message for all clients

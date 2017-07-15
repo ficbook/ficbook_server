@@ -1,10 +1,10 @@
 package chat
 
 type Message struct {
-	Login string `json:"author"`
-	Body   string `json:"body"`
+	Login string `json:"login"`
+	Text string `json:"text"`
 }
 
 func (self *Message) String() string {
-	return self.Login + " says " + self.Body
+	return self.Login + ": " + self.Text
 }

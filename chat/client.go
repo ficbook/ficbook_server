@@ -97,14 +97,19 @@ func (c *Client) listenRead() {
 
 		// read data from websocket connection
 		default:
-			var msg Message
+			var msg map[string]interface{}
 			err := websocket.JSON.Receive(c.ws, &msg)
 			if err == io.EOF {
 				c.doneCh <- true
 			} else if err != nil {
 				c.server.Err(err)
 			} else {
-				c.server.SendAll(&msg)
+				var ar APIReturn
+				ParseAPI(&msg, &ar)
+				switch ar.Type {
+					case "ERROR": c.server.SendAll(&Message{"Error",ar.Text})
+					case "MESSAGE": c.server.SendAll(&Message{ar.Type,ar.Text})
+				}
 			}
 		}
 	}
