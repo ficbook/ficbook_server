@@ -4,8 +4,9 @@ import (
 	"log"
 	"net/http"
 	//"container/list"
-	"fmt"
+	"strings"
 	"golang.org/x/net/websocket"
+	"time"
 )
 
 // Chat server.
@@ -114,15 +115,10 @@ func (s *Server) Listen() {
 		case c := <-s.addCh:
 			s.clients[c.id] = c
 			log.Println("Now", len(s.clients), "clients connected.")
-			s.sendPastMessages(c)
-		//	s.sendToClient(c, &Message{""})
-			id := fmt.Sprintf("%d", (*c).id)
-			s.sendAll(&Message{Login: "[Сервер]", Text: "Пользователь присоединился к чату. ID: " + id})
+			//s.sendPastMessages(c)
 
 		// del a client
 		case c := <-s.delCh:
-			id := fmt.Sprintf("%d", (*c).id)
-			s.sendAll(&Message{Login: "[Сервер]", Text: "Пользователь вышел из чата. ID: " + id})
 			delete(s.clients, c.id)
 
 		// broadcast message for all clients
@@ -133,8 +129,14 @@ func (s *Server) Listen() {
 
 		case v := <-s.sendQuery:
 			ar := *v.ApiReturn
+			client := *v.Client
 			m := Message{ar.Type, ar.Text}
 			s.sendToClient(v.Client, &m)
+			if strings.Contains(ar.Type, "AUTH_ERROR") {
+				time.Sleep(1)
+				client.ws.Close()
+				delete(s.clients, client.id)
+			}
 
 	//	case err := <-s.errCh:
 	//		continue

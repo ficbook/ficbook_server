@@ -1,8 +1,8 @@
 package chat
 
 type Message struct {
-	Login string `json:"login"`
-	Text string `json:"text"`
+	Login string `json:"type"`
+	Text string `json:"data"`
 }
 
 func (self *Message) String() string {

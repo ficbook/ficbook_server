@@ -2,8 +2,8 @@ package chat
 
 //APIReturn - the structure returned by the ParseAPI function
 type APIReturn struct {
-	Type string
-	Text string
+	Type string `json:"type"`
+	Text string `json:"text"`
 }
 
 type InfoQuery struct {

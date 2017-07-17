@@ -19,6 +19,7 @@ type Client struct {
 	server *Server
 	ch     chan *Message
 	doneCh chan bool
+	isAuth bool
 }
 
 // Create new chat client.
@@ -36,7 +37,7 @@ func NewClient(ws *websocket.Conn, server *Server) *Client {
 	ch := make(chan *Message, channelBufSize)
 	doneCh := make(chan bool)
 
-	return &Client{maxId, ws, server, ch, doneCh}
+	return &Client{maxId, ws, server, ch, doneCh, false}
 }
 
 func (c *Client) Conn() *websocket.Conn {
@@ -110,6 +111,7 @@ func (c *Client) listenRead() {
 					case "ERROR": c.server.SendAll(&Message{"Error",ar.Text})
 					case "MESSAGE": c.server.SendAll(&Message{ar.Type,ar.Text})
 					case "TEST":
+					case "AUTH_ERROR":
 						vv := ParseQuery(c, &ar)
 						c.server.SendQuery(&vv)
 				}
