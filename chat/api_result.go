@@ -5,3 +5,8 @@ type APIReturn struct {
 	Type string
 	Text string
 }
+
+type InfoQuery struct {
+	Client *Client
+	ApiReturn *APIReturn
+}

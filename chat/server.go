@@ -3,9 +3,8 @@ package chat
 import (
 	"log"
 	"net/http"
-	"fmt"
 	//"container/list"
-
+	"fmt"
 	"golang.org/x/net/websocket"
 )
 
@@ -17,6 +16,7 @@ type Server struct {
 	addCh     chan *Client
 	delCh     chan *Client
 	sendAllCh chan *Message
+	sendQuery chan *InfoQuery
 	doneCh    chan bool
 	errCh     chan error
 }
@@ -28,6 +28,7 @@ func NewServer(pattern string) *Server {
 	addCh := make(chan *Client)
 	delCh := make(chan *Client)
 	sendAllCh := make(chan *Message)
+	sendQuery := make(chan *InfoQuery)
 	doneCh := make(chan bool)
 	errCh := make(chan error)
 
@@ -38,6 +39,7 @@ func NewServer(pattern string) *Server {
 		addCh,
 		delCh,
 		sendAllCh,
+		sendQuery,
 		doneCh,
 		errCh,
 	}
@@ -49,6 +51,10 @@ func (s *Server) Add(c *Client) {
 
 func (s *Server) Del(c *Client) {
 	s.delCh <- c
+}
+
+func (s *Server) SendQuery(i *InfoQuery) {
+	s.sendQuery <- i
 }
 
 func (s *Server) SendAll(msg *Message) {
@@ -73,6 +79,10 @@ func (s *Server) sendAll(msg *Message) {
 	for _, c := range s.clients {
 		c.Write(msg)
 	}
+}
+
+func (s *Server) sendToClient(client *Client, msg *Message) {
+	client.Write(msg)
 }
 
 // Listen and serve.
@@ -102,10 +112,10 @@ func (s *Server) Listen() {
 
 		// Add new a client
 		case c := <-s.addCh:
-			log.Println("Added new client")
 			s.clients[c.id] = c
 			log.Println("Now", len(s.clients), "clients connected.")
 			s.sendPastMessages(c)
+		//	s.sendToClient(c, &Message{""})
 			id := fmt.Sprintf("%d", (*c).id)
 			s.sendAll(&Message{Login: "[Сервер]", Text: "Пользователь присоединился к чату. ID: " + id})
 
@@ -121,8 +131,13 @@ func (s *Server) Listen() {
 			s.messages = append(s.messages, msg)
 			s.sendAll(msg)
 
-		case err := <-s.errCh:
-			log.Println("Error:", err.Error())
+		case v := <-s.sendQuery:
+			ar := *v.ApiReturn
+			m := Message{ar.Type, ar.Text}
+			s.sendToClient(v.Client, &m)
+
+	//	case err := <-s.errCh:
+	//		continue
 
 		case <-s.doneCh:
 			return
