@@ -6,6 +6,5 @@ type Message struct {
 }
 
 func (self *Message) String() string {
-	//return self.Login + ": " + self.Text
-	return "1"
+	return "Send Message [" + self.Type + "]"
 }

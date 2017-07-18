@@ -5,8 +5,8 @@ ws = websocket.WebSocket()
 ws.connect("ws://localhost:8080/entry")
 dd = {
 	"type":"authorize",
-	"login":"ficbook_bot",
-	"password":"Ficbook_bot12348"
+	"login":"login",
+	"password":"password"
 }
 ws.send(json.dumps(dd)) 
 result = ws.recv()

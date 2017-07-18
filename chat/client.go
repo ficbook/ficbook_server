@@ -110,9 +110,7 @@ func (c *Client) listenRead() {
 				switch ar.Type {
 			//		case "ERROR": c.server.SendAll(&Message{"Error",ar.Text})
 			//		case "MESSAGE": c.server.SendAll(&Message{ar.Type,ar.Text})
-					case "TEST":
-					case "AUTH_ERROR":
-						log.Print("test")
+					default:
 						vv := ParseQuery(c, &ar)
 						c.server.SendQuery(&vv)
 					case "AUTH_OK":
