@@ -73,7 +73,7 @@ func (c *Client) listenWrite() {
 		// send message to the client
 		case msg := <-c.ch:
 			log.Println("Send:", msg)
-			websocket.JSON.Send(c.ws, msg)
+			websocket.JSON.Send(c.ws, msg.Text)
 
 		// receive done request
 		case <-c.doneCh:
@@ -108,10 +108,15 @@ func (c *Client) listenRead() {
 				var ar APIReturn
 				ParseAPI(&msg, &ar)
 				switch ar.Type {
-					case "ERROR": c.server.SendAll(&Message{"Error",ar.Text})
-					case "MESSAGE": c.server.SendAll(&Message{ar.Type,ar.Text})
+			//		case "ERROR": c.server.SendAll(&Message{"Error",ar.Text})
+			//		case "MESSAGE": c.server.SendAll(&Message{ar.Type,ar.Text})
 					case "TEST":
 					case "AUTH_ERROR":
+						log.Print("test")
+						vv := ParseQuery(c, &ar)
+						c.server.SendQuery(&vv)
+					case "AUTH_OK":
+						c.isAuth = true
 						vv := ParseQuery(c, &ar)
 						c.server.SendQuery(&vv)
 				}

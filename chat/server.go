@@ -6,7 +6,7 @@ import (
 	//"container/list"
 	"strings"
 	"golang.org/x/net/websocket"
-	"time"
+	"encoding/json"
 )
 
 // Chat server.
@@ -129,13 +129,15 @@ func (s *Server) Listen() {
 
 		case v := <-s.sendQuery:
 			ar := *v.ApiReturn
-			client := *v.Client
-			m := Message{ar.Type, ar.Text}
+			//client := *v.Client
+			interf := make(map[string]interface{})
+			json.Unmarshal([]byte(ar.Text), &interf)
+			m := Message{ar.Type, interf}
 			s.sendToClient(v.Client, &m)
 			if strings.Contains(ar.Type, "AUTH_ERROR") {
-				time.Sleep(1)
-				client.ws.Close()
-				delete(s.clients, client.id)
+//				time.Sleep(5)
+//				client.ws.Close()
+//				delete(s.clients, client.id)
 			}
 
 	//	case err := <-s.errCh:
