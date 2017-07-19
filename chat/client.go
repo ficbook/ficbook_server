@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-
 	"golang.org/x/net/websocket"
 	"github.com/jinzhu/gorm"
 )
@@ -74,8 +73,14 @@ func (c *Client) listenWrite() {
 
 		// send message to the client
 		case msg := <-c.ch:
-			log.Println("Send:", msg)
-			websocket.JSON.Send(c.ws, msg.Text)
+			if c.isAuth {
+				websocket.JSON.Send(c.ws, msg.Text)
+			} else {
+				intf := make(map[string]interface{})
+				intf["type"] = "error"
+				intf["error"] = "You are not authorized"
+				websocket.JSON.Send(c.ws, intf)
+			}
 
 		// receive done request
 		case <-c.doneCh:
@@ -114,11 +119,13 @@ func (c *Client) listenRead() {
 			//		case "MESSAGE": c.server.SendAll(&Message{ar.Type,ar.Text})
 					default:
 						vv := ParseQuery(c, &ar)
-						c.server.SendQuery(&vv)
+						c.server.SendQuery(&vv)		
 					case "AUTH_OK":
-						c.isAuth = true
+						(*c).isAuth = true
 						vv := ParseQuery(c, &ar)
 						c.server.SendQuery(&vv)
+					
+					
 				}
 			}
 		}

@@ -15,7 +15,7 @@ func main() {
 	defer db.Close()
 
 	// websocket server
-	server := chat.NewServer("/entry", db)
+	server := chat.NewServer("/", db)
 	go server.Listen()
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
