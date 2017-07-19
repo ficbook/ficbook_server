@@ -3,10 +3,11 @@ package chat
 import (
 	"log"
 	"net/http"
-	//"container/list"
+	"time"
 	"strings"
 	"golang.org/x/net/websocket"
 	"encoding/json"
+	"github.com/jinzhu/gorm"
 )
 
 // Chat server.
@@ -20,10 +21,11 @@ type Server struct {
 	sendQuery chan *InfoQuery
 	doneCh    chan bool
 	errCh     chan error
+	db	*gorm.DB
 }
 
 // Create new chat server.
-func NewServer(pattern string) *Server {
+func NewServer(pattern string, db *gorm.DB) *Server {
 	messages := []*Message{}
 	clients := make(map[int]*Client)
 	addCh := make(chan *Client)
@@ -43,6 +45,7 @@ func NewServer(pattern string) *Server {
 		sendQuery,
 		doneCh,
 		errCh,
+		db,
 	}
 }
 
@@ -101,7 +104,7 @@ func (s *Server) Listen() {
 			}
 		}()
 
-		client := NewClient(ws, s)
+		client := NewClient(ws, s, s.db)
 		s.Add(client)
 		client.Listen()
 	}
@@ -129,15 +132,15 @@ func (s *Server) Listen() {
 
 		case v := <-s.sendQuery:
 			ar := *v.ApiReturn
-			//client := *v.Client
+			client := *v.Client
 			interf := make(map[string]interface{})
 			json.Unmarshal([]byte(ar.Text), &interf)
 			m := Message{ar.Type, interf}
 			s.sendToClient(v.Client, &m)
 			if strings.Contains(ar.Type, "AUTH_ERROR") {
-//				time.Sleep(5)
-//				client.ws.Close()
-//				delete(s.clients, client.id)
+				time.Sleep(1)
+				client.ws.Close()
+				delete(s.clients, client.id)
 			}
 
 	//	case err := <-s.errCh:

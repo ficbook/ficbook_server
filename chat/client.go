@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"golang.org/x/net/websocket"
+	"github.com/jinzhu/gorm"
 )
 
 const channelBufSize = 100
@@ -20,10 +21,11 @@ type Client struct {
 	ch     chan *Message
 	doneCh chan bool
 	isAuth bool
+	db *gorm.DB
 }
 
 // Create new chat client.
-func NewClient(ws *websocket.Conn, server *Server) *Client {
+func NewClient(ws *websocket.Conn, server *Server, db *gorm.DB) *Client {
 
 	if ws == nil {
 		panic("ws cannot be nil")
@@ -32,12 +34,12 @@ func NewClient(ws *websocket.Conn, server *Server) *Client {
 	if server == nil {
 		panic("server cannot be nil")
 	}
-
+	
 	maxId++
 	ch := make(chan *Message, channelBufSize)
 	doneCh := make(chan bool)
 
-	return &Client{maxId, ws, server, ch, doneCh, false}
+	return &Client{maxId, ws, server, ch, doneCh, false, db}
 }
 
 func (c *Client) Conn() *websocket.Conn {
