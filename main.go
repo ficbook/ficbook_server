@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
-	"./chat"
+	"github.com/ficbook/ficbook_server/chat"
 )
 
 func main() {
