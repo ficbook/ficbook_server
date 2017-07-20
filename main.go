@@ -6,17 +6,24 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/ficbook/ficbook_server/chat"
+	"github.com/yanzay/cfg"
 )
 
 func main() {
 	log.SetFlags(log.Lshortfile)
 
-	db, _ := gorm.Open("mysql", "root:qwer99@/ficbook?charset=utf8&parseTime=True&loc=Local")
+	cfgInfo := make(map[string]string)
+	err := cfg.Load("config.cfg", cfgInfo)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db, _ := gorm.Open(cfgInfo["db_server"], cfgInfo["db_user"] + ":" + cfgInfo["db_password"] + "@/" + cfgInfo["db_table"] + "?charset=" + cfgInfo["charset"] + "&parseTime=" + cfgInfo["parse_time"] + "&loc=" + cfgInfo["loc"])
 	defer db.Close()
 
 	// websocket server
-	server := chat.NewServer("/", db)
+	server := chat.NewServer(cfgInfo["server_pattern"], db)
 	go server.Listen()
 
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(cfgInfo["server_ip"] + ":" + cfgInfo["server_port"], nil))
 }
