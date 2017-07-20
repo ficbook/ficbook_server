@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"flag"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/ficbook/ficbook_server/chat"
@@ -12,8 +13,11 @@ import (
 func main() {
 	log.SetFlags(log.Lshortfile)
 
+	configPtr := flag.String("config", "config.cfg", "Path to the configuration file")
+	flag.Parse()
+
 	cfgInfo := make(map[string]string)
-	err := cfg.Load("config.cfg", cfgInfo)
+	err := cfg.Load(*configPtr, cfgInfo)
 	if err != nil {
 		log.Fatal(err)
 	}
