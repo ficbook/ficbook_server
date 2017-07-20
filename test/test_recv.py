@@ -2,7 +2,7 @@ import websocket
 import json
 
 ws = websocket.WebSocket()
-ws.connect("ws://localhost:8080/entry")
+ws.connect("ws://localhost:8080")
 dd = {
 	"type":"authorize",
 	"login":"login",
