@@ -14,6 +14,7 @@ import (
 type Server struct {
 	pattern   string
 	messages  []*Message
+	rooms	  []*Room
 	clients   map[int]*Client
 	addCh     chan *Client
 	delCh     chan *Client
@@ -35,9 +36,17 @@ func NewServer(pattern string, db *gorm.DB) *Server {
 	doneCh := make(chan bool)
 	errCh := make(chan error)
 
+	rooms := []*Room{}
+	var roomsSQL []*Room
+	db.Table("chat_rooms").Find(&roomsSQL)
+	for _, room := range roomsSQL {
+		rooms = append(rooms, NewRoom(room.Id, room.Name, room.Topic, room.UUID))
+	}
+
 	return &Server{
 		pattern,
 		messages,
+		rooms,
 		clients,
 		addCh,
 		delCh,
