@@ -3,9 +3,9 @@ import json
 import settings
 
 ws = websocket.WebSocket()
-ws.connect("ws://localhost:8080")
+ws.connect("ws://192.168.0.105:8080")
 dd = {
-	"type":"authorize",
+	"type":"autorize",
 	"login":settings.login,
 	"password":settings.password
 }

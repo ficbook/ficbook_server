@@ -40,7 +40,7 @@ func NewServer(pattern string, db *gorm.DB) *Server {
 	var roomsSQL []*Room
 	db.Table("chat_rooms").Find(&roomsSQL)
 	for _, room := range roomsSQL {
-		rooms = append(rooms, NewRoom(room.Id, room.Name, room.Topic, room.UUID))
+		rooms = append(rooms, NewRoom(room.Id, room.Name, room.Topic, room.About, room.UUID))
 	}
 
 	return &Server{
