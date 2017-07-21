@@ -113,7 +113,7 @@ func (c *Client) listenRead() {
 				c.server.Err(err)
 			} else {
 				var ar APIReturn
-				ParseAPI(&msg, &ar)
+				ParseAPI(c, &msg, &ar)
 				switch ar.Type {
 			//		case "ERROR": c.server.SendAll(&Message{"Error",ar.Text})
 			//		case "MESSAGE": c.server.SendAll(&Message{ar.Type,ar.Text})

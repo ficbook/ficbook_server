@@ -12,5 +12,13 @@ dd = {
 ws.send(json.dumps(dd)) 
 result = ws.recv()
 print(result)
-ws.close()
 
+dd = {
+    "type":"rooms",
+    "action":"get"
+}
+ws.send(json.dumps(dd)) 
+result = ws.recv()
+print(result)
+
+ws.close()

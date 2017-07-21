@@ -1,12 +1,13 @@
 import websocket
 import json
+import settings
 
 ws = websocket.WebSocket()
 ws.connect("ws://localhost:8080")
 dd = {
 	"type":"authorize",
-	"login":"login",
-	"password":"password"
+	"login":settings.login,
+	"password":settings.password
 }
 ws.send(json.dumps(dd)) 
 

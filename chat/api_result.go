@@ -4,6 +4,7 @@ package chat
 type APIReturn struct {
 	Type string `json:"type"`
 	Text string `json:"text"`
+	Interface *map[string]interface{}
 }
 
 type InfoQuery struct {

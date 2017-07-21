@@ -142,9 +142,14 @@ func (s *Server) Listen() {
 		case v := <-s.sendQuery:
 			ar := *v.ApiReturn
 			client := *v.Client
-			interf := make(map[string]interface{})
-			json.Unmarshal([]byte(ar.Text), &interf)
-			m := Message{ar.Type, interf}
+			var m Message
+			if ar.Interface == nil {
+				interf := make(map[string]interface{})
+				json.Unmarshal([]byte(ar.Text), &interf)
+				m = Message{ar.Type, interf}
+			} else {
+				m = Message{ar.Type, *(ar.Interface)}
+			}
 			s.sendToClient(v.Client, &m)
 			if strings.Contains(ar.Type, "AUTH_ERROR") {
 				time.Sleep(1)
