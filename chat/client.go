@@ -6,6 +6,7 @@ import (
 	"log"
 	"golang.org/x/net/websocket"
 	"github.com/jinzhu/gorm"
+	"time"
 )
 
 const channelBufSize = 100
@@ -20,6 +21,7 @@ type Client struct {
 	ch     chan *Message
 	doneCh chan bool
 	login string
+	room_uuid string
 	isAuth bool
 	db *gorm.DB
 }
@@ -39,7 +41,7 @@ func NewClient(ws *websocket.Conn, server *Server, db *gorm.DB) *Client {
 	ch := make(chan *Message, channelBufSize)
 	doneCh := make(chan bool)
 
-	return &Client{maxId, ws, server, ch, doneCh, "Unknown", false, db}
+	return &Client{maxId, ws, server, ch, doneCh, "Unknown", "", false, db}
 }
 
 func (c *Client) Conn() *websocket.Conn {
@@ -127,12 +129,16 @@ func (c *Client) listenRead() {
 						c.server.SendQuery(vv)
 					case "ROOM_JOIN":
 						vv := ParseQuery(c, &ar)
+						c.room_uuid = vv.ApiReturn.ReturnVariable.string
 						c.server.SendQuery(vv)
 						var messageSQL []*ChatMessageSQL
-						c.server.db.Table("chat_message_all").Order("id desc").Find(&messageSQL).Limit(1)
+						c.server.db.Table("chat_message_all").Where("room_uuid = ?", GetSpecialRoomByName(c.server.rooms, msg["room_name"].(string)).UUID).Order("id desc").Find(&messageSQL).Limit(1)
 						var messageJSON []ChatMessageJSON
 						for _, mes := range(messageSQL) {
 							messageJSON = append(messageJSON, NewChatMessageJSON(mes.Login, mes.Message, mes.Timestamp))
+						}
+						if len(messageJSON) == 0 {
+							messageJSON = append(messageJSON, NewChatMessageJSON("Server", "Сообщений нет", time.Now()))
 						}
 						vv = ParseMessageQuery(c, &messageJSON, &ar)
 						c.server.SendQuery(vv)

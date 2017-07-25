@@ -1,11 +1,5 @@
 package chat
 
-import (
-	"fmt"
-	"strings"
-	u "github.com/satori/go.uuid"
-)
-
 type Room struct {
 	Id int `json:"id"`
 	Name string `json:"name"`
@@ -31,25 +25,13 @@ func NewRoom(id int, name string, topic string, about, UUID string) *Room {
 
 //CreateRoom returns the address of the created room
 func CreateRoom(id int, name string, topic string, about string) *Room {
-	uuid := u.NewV4()
 	return &Room{
 		id,
 		name,
 		topic,
 		about,
-		fmt.Sprint(uuid),
+		NewUUID(),
 		[]*Client{},
 		0,
 	}
-}
-
-func GetSpecialRoomByName(rooms []*Room, name string) *Room {
-	var index *int
-	for i, room := range(rooms) {
-		if strings.Contains(room.Name, name) {
-			*index = i
-			break
-		}
-	}
-	return rooms[*index]
 }

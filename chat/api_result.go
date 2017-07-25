@@ -16,4 +16,5 @@ type InfoQuery struct {
 type ReturnVariable struct {
 	ChatMessageJson *[]ChatMessageJSON
 	code int
+	string
 }

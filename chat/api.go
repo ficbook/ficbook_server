@@ -36,7 +36,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn)
 				action_msg, _ := (*msg)["action"]
 				switch action_msg {
 					case "join":
-						*apiReturn = APIReturn{"ROOM_JOIN", `{"type":"room","object":"about","room_name":"`+(*msg)["room_name"].(string)+`","about":"Unknown"}`, nil, nil}
+						*apiReturn = APIReturn{"ROOM_JOIN", `{"type":"room","object":"about","room_name":"`+(*msg)["room_name"].(string)+`","about":"Unknown"}`, nil, &ReturnVariable{nil, 0, (*msg)["room_name"].(string)}}
 				}
 			case "chat":
 				action_msg, _ := (*msg)["action"]
@@ -49,13 +49,15 @@ func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn)
 								//tN := (time.Now().UnixNano() / 1000000) + 10800
 								//client.server.db.Exec("SELECT current_timestamp();", tN)
 								var messageSQL []*ChatMessageSQL
-								client.server.db.Table("chat_message_all").Order("timestamp desc").Where("timestamp BETWEEN ? AND ?", timestamp, time.Now()).Find(&messageSQL).Limit(20)
+								//tN := time.Now().Local().Add(time.Hour * time.Duration(3) + time.Minute * time.Duration(0) + time.Second * time.Duration(0))
+								//client.server.db.Table("chat_message_all").Order("timestamp desc").Where("timestamp BETWEEN ? AND ?", timestamp, tN).Find(&messageSQL).Limit(20)
+								client.server.db.Table("chat_message_all").Order("timestamp desc").Where("timestamp <= ?", timestamp).Where("room_uuid = ?", GetSpecialRoomByName(client.server.rooms, (*msg)["room_name"].(string)).UUID).Find(&messageSQL).Limit(20)
 								var messageJSON []ChatMessageJSON
 								for _, mes := range(messageSQL) {
 									messageJSON = append(messageJSON, NewChatMessageJSON(mes.Login, mes.Message, mes.Timestamp))
 								}
 								//vv := ParseMessageQuery(client, messageJSON, apiReturn)
-								*apiReturn = APIReturn{"CHAT_GET_HISTORY", "", nil, &ReturnVariable{&messageJSON, 0}}
+								*apiReturn = APIReturn{"CHAT_GET_HISTORY", "", nil, &ReturnVariable{&messageJSON, 0, ""}}
 						}
 					case "send":
 						switch subject {
@@ -67,7 +69,14 @@ func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn)
 								mapInterface["time"] = time.Now().UnixNano() / 1000000
 								mapInterface["room_name"] = (*msg)["room_name"].(string)
 								mapInterface["message"] = (*msg)["message"].(string)
-								*apiReturn = APIReturn{"CHAT_SEND_MESSAGE", "", &mapInterface, &ReturnVariable{nil, 7777}}
+								client.server.db.Table("chat_message_all").Create(&ChatMessageSQL{
+									Login: client.login,
+									Message: (*msg)["message"].(string),
+									Timestamp: time.Now(),
+									RoomUUID: GetSpecialRoomByName(client.server.rooms, (*msg)["room_name"].(string)).UUID,
+
+								})
+								*apiReturn = APIReturn{"CHAT_SEND_MESSAGE", "", &mapInterface, &ReturnVariable{nil, 7777, ""}}
 						}
 				}
 			}
@@ -87,7 +96,7 @@ func ParseQuery(client *Client, apiReturn *APIReturn) *InfoQuery {
 func ParseMessageQuery(client *Client, messages *[]ChatMessageJSON, apiReturn *APIReturn) *InfoQuery {
 	mapInterface := make(map[string]interface{})
 	mapInterface["type"] = "history"
-	mapInterface["name"] = "Test"
+	mapInterface["name"] = client.room_uuid
 	mapInterface["messages"] = *messages
 	return &InfoQuery{
 		client,
