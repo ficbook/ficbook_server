@@ -150,6 +150,7 @@ func (s *Server) Listen() {
 			} else {
 				m = Message{ar.Type, *(ar.Interface)}
 			}
+			log.Print(m)
 			s.sendToClient(v.Client, &m)
 			if strings.Contains(ar.Type, "AUTH_ERROR") {
 				time.Sleep(1)

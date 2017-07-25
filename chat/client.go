@@ -113,19 +113,30 @@ func (c *Client) listenRead() {
 				c.server.Err(err)
 			} else {
 				var ar APIReturn
+				log.Println(msg)
 				ParseAPI(c, &msg, &ar)
 				switch ar.Type {
-			//		case "ERROR": c.server.SendAll(&Message{"Error",ar.Text})
-			//		case "MESSAGE": c.server.SendAll(&Message{ar.Type,ar.Text})
 					default:
 						vv := ParseQuery(c, &ar)
-						c.server.SendQuery(&vv)		
+						c.server.SendQuery(vv)
 					case "AUTH_OK":
 						(*c).isAuth = true
 						vv := ParseQuery(c, &ar)
-						c.server.SendQuery(&vv)
-					
-					
+						c.server.SendQuery(vv)
+					case "ROOM_JOIN":
+						vv := ParseQuery(c, &ar)
+						c.server.SendQuery(vv)
+						var messageSQL []*ChatMessageSQL
+						c.server.db.Table("chat_message_all").Order("id desc").Find(&messageSQL).Limit(1)
+						var messageJSON []ChatMessageJSON
+						for _, mes := range(messageSQL) {
+							messageJSON = append(messageJSON, NewChatMessageJSON(mes.Login, mes.Message, mes.Timestamp))
+						}
+						vv = ParseMessageQuery(c, &messageJSON, &ar)
+						c.server.SendQuery(vv)
+					case "CHAT_GET_HISTORY":
+						vv := ParseMessageQuery(c, ar.ReturnVariable.ChatMessageJson, &ar)
+						c.server.SendQuery(vv)
 				}
 			}
 		}

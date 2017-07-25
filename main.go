@@ -6,7 +6,8 @@ import (
 	"flag"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
-	"github.com/ficbook/ficbook_server/chat"
+	//"github.com/ficbook/ficbook_server/chat"
+	"./chat_d"
 	"github.com/yanzay/cfg"
 )
 
@@ -22,7 +23,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	db, err := gorm.Open(cfgInfo["db_server"], cfgInfo["db_user"] + ":" + cfgInfo["db_password"] + "@/" + cfgInfo["db_table"])
+	db, err := gorm.Open(cfgInfo["db_server"], cfgInfo["db_user"] + ":" + cfgInfo["db_password"] + "@/" + cfgInfo["db_table"] + "?charset=utf8&parseTime=true")
 	defer db.Close()
 
 	// websocket server
