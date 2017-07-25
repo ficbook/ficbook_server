@@ -98,6 +98,8 @@ func (s *Server) sendToClient(client *Client, msg *Message) {
 	client.Write(msg)
 }
 
+
+
 // Listen and serve.
 // It serves client connection and broadcast request.
 func (s *Server) Listen() {
@@ -151,7 +153,13 @@ func (s *Server) Listen() {
 				m = Message{ar.Type, *(ar.Interface)}
 			}
 			log.Print(m)
-			s.sendToClient(v.Client, &m)
+			if ar.ReturnVariable == nil {
+				s.sendToClient(v.Client, &m)
+			} else {
+				if ar.ReturnVariable.code == 7777 {
+					s.sendAll(&m)
+				}
+			}
 			if strings.Contains(ar.Type, "AUTH_ERROR") {
 				time.Sleep(1)
 				client.ws.Close()

@@ -19,6 +19,7 @@ type Client struct {
 	server *Server
 	ch     chan *Message
 	doneCh chan bool
+	login string
 	isAuth bool
 	db *gorm.DB
 }
@@ -38,7 +39,7 @@ func NewClient(ws *websocket.Conn, server *Server, db *gorm.DB) *Client {
 	ch := make(chan *Message, channelBufSize)
 	doneCh := make(chan bool)
 
-	return &Client{maxId, ws, server, ch, doneCh, false, db}
+	return &Client{maxId, ws, server, ch, doneCh, "Unknown", false, db}
 }
 
 func (c *Client) Conn() *websocket.Conn {
@@ -121,6 +122,7 @@ func (c *Client) listenRead() {
 						c.server.SendQuery(vv)
 					case "AUTH_OK":
 						(*c).isAuth = true
+						(*c).login = msg["login"].(string)
 						vv := ParseQuery(c, &ar)
 						c.server.SendQuery(vv)
 					case "ROOM_JOIN":

@@ -6,8 +6,8 @@ import (
 	"flag"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
-	//"github.com/ficbook/ficbook_server/chat"
-	"./chat_d"
+	"github.com/ficbook/ficbook_server/chat"
+	//"./chat_d"
 	"github.com/yanzay/cfg"
 )
 

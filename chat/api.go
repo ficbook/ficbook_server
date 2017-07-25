@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+
 //ParseAPI works with the JSON requests
 func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn) {
 	type_msg, ok := (*msg)["type"]
@@ -45,6 +46,8 @@ func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn)
 						switch subject {
 							case "history":
 								timestamp, _ := (*msg)["timestamp"]
+								//tN := (time.Now().UnixNano() / 1000000) + 10800
+								//client.server.db.Exec("SELECT current_timestamp();", tN)
 								var messageSQL []*ChatMessageSQL
 								client.server.db.Table("chat_message_all").Order("timestamp desc").Where("timestamp BETWEEN ? AND ?", timestamp, time.Now()).Find(&messageSQL).Limit(20)
 								var messageJSON []ChatMessageJSON
@@ -52,7 +55,19 @@ func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn)
 									messageJSON = append(messageJSON, NewChatMessageJSON(mes.Login, mes.Message, mes.Timestamp))
 								}
 								//vv := ParseMessageQuery(client, messageJSON, apiReturn)
-								*apiReturn = APIReturn{"CHAT_GET_HISTORY", "", nil, &ReturnVariable{&messageJSON}}
+								*apiReturn = APIReturn{"CHAT_GET_HISTORY", "", nil, &ReturnVariable{&messageJSON, 0}}
+						}
+					case "send":
+						switch subject {
+							case "message":
+								mapInterface := make(map[string]interface{})
+								mapInterface["type"] = "chat"
+								mapInterface["object"] = "message"
+								mapInterface["user"] = client.login
+								mapInterface["time"] = time.Now().UnixNano() / 1000000
+								mapInterface["room_name"] = (*msg)["room_name"].(string)
+								mapInterface["message"] = (*msg)["message"].(string)
+								*apiReturn = APIReturn{"CHAT_SEND_MESSAGE", "", &mapInterface, &ReturnVariable{nil, 7777}}
 						}
 				}
 			}
