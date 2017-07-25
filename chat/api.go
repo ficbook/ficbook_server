@@ -2,6 +2,7 @@ package chat
 
 import (
 	"time"
+	"strings"
 )
 
 
@@ -62,21 +63,29 @@ func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn)
 					case "send":
 						switch subject {
 							case "message":
+								room := GetSpecialRoomByName(client.server.rooms, (*msg)["room_name"].(string))
 								mapInterface := make(map[string]interface{})
 								mapInterface["type"] = "chat"
 								mapInterface["object"] = "message"
-								mapInterface["user"] = client.login
 								mapInterface["time"] = time.Now().UnixNano() / 1000000
 								mapInterface["room_name"] = (*msg)["room_name"].(string)
-								mapInterface["message"] = (*msg)["message"].(string)
-								client.server.db.Table("chat_message_all").Create(&ChatMessageSQL{
-									Login: client.login,
-									Message: (*msg)["message"].(string),
-									Timestamp: time.Now(),
-									RoomUUID: GetSpecialRoomByName(client.server.rooms, (*msg)["room_name"].(string)).UUID,
-
-								})
-								*apiReturn = APIReturn{"CHAT_SEND_MESSAGE", "", &mapInterface, &ReturnVariable{nil, 7777, ""}}
+								if strings.Contains(room.Type, "public") {
+									mapInterface["user"] = client.login							
+									mapInterface["message"] = (*msg)["message"].(string)
+									client.server.db.Table("chat_message_all").Create(&ChatMessageSQL{
+										Login: client.login,
+										Message: (*msg)["message"].(string),
+										Timestamp: time.Now(),
+										RoomUUID: room.UUID,
+									})
+									*apiReturn = APIReturn{"CHAT_SEND_MESSAGE", "", &mapInterface, &ReturnVariable{nil, 7777, ""}}
+								} else {
+									mapInterface := make(map[string]interface{})
+									mapInterface["type"] = "event"
+									mapInterface["action"] = "custom"
+									mapInterface["message"] = "You do not have permission to post in this room"
+									*apiReturn = APIReturn{"CHAT_SEND_MESSAGE", "", &mapInterface, nil}
+								}
 						}
 				}
 			}
