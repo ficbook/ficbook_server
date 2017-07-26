@@ -26,4 +26,9 @@ ws.send(json.dumps(join_room))
 result = ws.recv()
 print(result)
 
+join_room = {"type":"chat","action":"get","subject":"history", "room_name":"Nikita"}
+ws.send(json.dumps(join_room)) 
+result = ws.recv()
+print(result)
+
 ws.close()

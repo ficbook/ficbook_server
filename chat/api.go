@@ -107,6 +107,9 @@ func ParseMessageQuery(client *Client, messages *[]ChatMessageJSON, apiReturn *A
 	mapInterface["type"] = "history"
 	mapInterface["name"] = client.room_uuid
 	mapInterface["messages"] = *messages
+	if len(*messages) == 0 {
+		mapInterface["messages"] = []int{}
+	}
 	return &InfoQuery{
 		client,
 		&APIReturn{

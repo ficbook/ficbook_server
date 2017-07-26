@@ -6,7 +6,6 @@ import (
 	"log"
 	"golang.org/x/net/websocket"
 	"github.com/jinzhu/gorm"
-	"time"
 )
 
 const channelBufSize = 100
@@ -128,17 +127,30 @@ func (c *Client) listenRead() {
 						vv := ParseQuery(c, &ar)
 						c.server.SendQuery(vv)
 					case "ROOM_JOIN":
-						vv := ParseQuery(c, &ar)
-						c.room_uuid = vv.ApiReturn.ReturnVariable.string
+						room := GetSpecialRoomByName(c.server.rooms, c.room_uuid)
+						mesJSON := make(map[string]interface{})
+						mesJSON["type"] = "event"
+						mesJSON["action"] = "join"
+						mesJSON["user_name"] = c.login
+						mesJSON["room_name"] = room.Name
+						mesJSON["users_count"] = room.LenUsers
+						vv := ParseQuery(c, &APIReturn{"USER_ROOM_JOIN", "", &mesJSON, nil})
 						c.server.SendQuery(vv)
+						mesJSON = make(map[string]interface{})
+						mesJSON["type"] = "event"
+						mesJSON["action"] = "room"
+						mesJSON["object"] = "about"
+						mesJSON["about"] = room.About
+						vv = ParseQuery(c, &APIReturn{"USER_ROOM_ABOUT", "", &mesJSON, nil})
+						c.server.SendQuery(vv)
+						vv = ParseQuery(c, &ar)
+						c.server.SendQuery(vv)
+						c.room_uuid = vv.ApiReturn.ReturnVariable.string
 						var messageSQL []*ChatMessageSQL
-						c.server.db.Table("chat_message_all").Where("room_uuid = ?", GetSpecialRoomByName(c.server.rooms, msg["room_name"].(string)).UUID).Order("id desc").Find(&messageSQL).Limit(1)
+						c.server.db.Table("chat_message_all").Where("room_uuid = ?", GetSpecialRoomByName(c.server.rooms, msg["room_name"].(string)).UUID).Order("id desc").Find(&messageSQL).Limit(10)
 						var messageJSON []ChatMessageJSON
 						for _, mes := range(messageSQL) {
 							messageJSON = append(messageJSON, NewChatMessageJSON(mes.Login, mes.Message, mes.Timestamp))
-						}
-						if len(messageJSON) == 0 {
-							messageJSON = append(messageJSON, NewChatMessageJSON("Server", "Сообщений нет", time.Now()))
 						}
 						vv = ParseMessageQuery(c, &messageJSON, &ar)
 						c.server.SendQuery(vv)
