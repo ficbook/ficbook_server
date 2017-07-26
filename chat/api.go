@@ -63,32 +63,25 @@ func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn)
 					case "send":
 						switch subject {
 							case "message":
-								room := GetSpecialRoomByName(client.server.rooms, (*msg)["room_name"].(string))
-								mapInterface := make(map[string]interface{})
-								mapInterface["type"] = "chat"
-								mapInterface["object"] = "message"
-								mapInterface["time"] = time.Now().UnixNano() / 1000000
-								mapInterface["room_name"] = (*msg)["room_name"].(string)
-								if strings.Contains(room.Type, "public") {
-									mapInterface["user"] = client.login							
-									mapInterface["message"] = (*msg)["message"].(string)
-									client.server.db.Table("chat_message_all").Create(&ChatMessageSQL{
-										Login: client.login,
-										Message: (*msg)["message"].(string),
-										Timestamp: time.Now(),
-										RoomUUID: room.UUID,
-									})
-									*apiReturn = APIReturn{"CHAT_SEND_MESSAGE", "", &mapInterface, &ReturnVariable{nil, 7777, ""}}
-								} else {
-									mapInterface := make(map[string]interface{})
-									mapInterface["type"] = "event"
-									mapInterface["action"] = "custom"
-									mapInterface["message"] = "You do not have permission to post in this room"
-									*apiReturn = APIReturn{"CHAT_SEND_MESSAGE", "", &mapInterface, nil}
+								message := (*msg)["message"].(string)
+									room := GetSpecialRoomByName(client.server.rooms, (*msg)["room_name"].(string))
+									mapInterface := CreateInterfaceMessage((*msg)["room_name"].(string), "", "")
+									if strings.Contains(room.Type, "public") {
+										(*mapInterface)["user"] = client.login							
+										(*mapInterface)["message"] = message
+										client.server.db.Table("chat_message_all").Create(&ChatMessageSQL{
+											Login: client.login,
+											Message: message,
+											Timestamp: time.Now(),
+											RoomUUID: room.UUID,
+										})
+										*apiReturn = APIReturn{"CHAT_SEND_MESSAGE", "", mapInterface, &ReturnVariable{nil, 7777, ""}}
+									} else {
+										*apiReturn = *CreateCustomEvent("CHAT_SEND_MESSAGE", "You do not have permission to post in this room")
+									}
 								}
 						}
 				}
-			}
 	} else {
 		*apiReturn = APIReturn{"ERROR", `{"type": "Error", "result": "falled", "error": "Missing type key"}`, nil, nil}
 	}
@@ -119,4 +112,26 @@ func ParseMessageQuery(client *Client, messages *[]ChatMessageJSON, apiReturn *A
 			nil,
 		},
 	}
+}
+
+func CreateCustomEvent(typeAPI string, message string) *APIReturn {
+	mapInterface := make(map[string]interface{})
+	mapInterface["type"] = "event"
+	mapInterface["action"] = "custom"
+	mapInterface["message"] = message
+	return &APIReturn{typeAPI, "", &mapInterface, nil}
+}
+
+func CreateInterfaceMessage(room_name string, user string, message string) *map[string]interface{} {
+	if strings.Contains(user, "") {
+		user = "Ficbook Chat Bot"
+	}
+	mapInterface := make(map[string]interface{})
+	mapInterface["type"] = "chat"
+	mapInterface["object"] = "message"
+	mapInterface["time"] = time.Now().UnixNano() / 1000000
+	mapInterface["room_name"] = room_name
+	mapInterface["user"] = user
+	mapInterface["message"] = message
+	return &mapInterface
 }

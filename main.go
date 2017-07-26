@@ -23,7 +23,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	db, err := gorm.Open(cfgInfo["db_server"], cfgInfo["db_user"] + ":" + cfgInfo["db_password"] + "@/" + cfgInfo["db_table"] + "?charset=utf8&parseTime=true")
+	db, err := gorm.Open(cfgInfo["db_server"], cfgInfo["db_user"] + ":" + cfgInfo["db_password"] + "@/" + cfgInfo["db_table"] + "?charset=utf8mb4&parseTime=true")
 	defer db.Close()
 
 	// websocket server
