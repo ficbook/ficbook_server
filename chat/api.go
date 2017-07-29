@@ -86,7 +86,8 @@ func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn)
 						switch subject {
 							case "message":
 								isCommand := false
-								if (*msg)["message"].(string)[0] == '!' {
+								endMessage := (*msg)["message"].(string)
+								if endMessage[0] == '!' {
 									isCommand = true
 								}
 								room := GetSpecialRoomByName(client.server.rooms, (*msg)["room_name"].(string))								
@@ -94,7 +95,6 @@ func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn)
 									*apiReturn = *CreateCustomEvent("CHAT_SEND_MESSAGE", "You do not have permission to post in this room")
 								} else {
 									returnVariable := ReturnVariable{nil, 7777, ""}
-									endMessage := (*msg)["message"].(string)
 									mapInterface := CreateInterfaceMessage((*msg)["room_name"].(string), "", "")
 									if strings.Contains(room.Type, "system") || isCommand {
 										(*mapInterface)["user"] = "Ficbook Chat Message"
@@ -102,14 +102,35 @@ func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn)
 										(*mapInterface)["user"] = client.login
 									}
 									if isCommand {
+										messages := strings.Split(endMessage, " ")
 										returnVariable = ReturnVariable{nil, 0, ""}
-										switch endMessage[1:] {
+										switch messages[0][1:] {
 											default:
 												endMessage = "This command does not exist. Enter !help to view commands"
 											case "help":
-												endMessage = "!test - Testing the command"
+												endMessage = "!test - Testing the command\n!refresh - Refresh"
 											case "test":
 												endMessage = "Test message!"
+											case "refresh":
+												if client.userInfo.Power < 1000 {
+													endMessage = "You do not have permission to use this command"
+												} else {
+													if len(messages) == 1 {
+														endMessage = "refresh:\n\trooms"
+													} else {
+														switch messages[1] {
+															case "rooms":
+																rooms := []*Room{}
+																var roomsSQL []*Room
+																client.server.db.Table("chat_rooms").Find(&roomsSQL)
+																for _, room := range roomsSQL {
+																	rooms = append(rooms, NewRoom(room.Id, room.Name, room.Topic, room.About, room.Type, room.UUID))
+																}
+																client.server.rooms = rooms
+																endMessage = "Rooms successfully updated"
+															}
+														}
+												}									
 										}
 									}
 									(*mapInterface)["message"] = endMessage
