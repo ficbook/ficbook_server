@@ -3,7 +3,7 @@ import json
 import settings
 
 ws = websocket.WebSocket()
-ws.connect("ws://192.168.0.105:8080")
+ws.connect("ws://192.168.0.105:7070")
 dd = {
 	"type":"autorize",
 	"login":settings.login,

@@ -3,6 +3,7 @@ package chat
 import (
 	"time"
 	"strings"
+	"strconv"
 )
 
 
@@ -15,7 +16,20 @@ func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn)
 			case "autorize":
 				isAuth := Authorization((*msg)["login"].(string), (*msg)["password"].(string))
 				if isAuth {
-					*apiReturn = APIReturn{"AUTH_OK", `{"type":"status", "action": "authorization", "status": "success", "power": 0, "result": "ok", "login": "` + (*msg)["login"].(string) + `","password": "` + (*msg)["password"].(string) + `"}`, nil, nil}
+					var userInfo UserInfo
+					client.server.db.Where("login = ?", (*msg)["login"].(string)).First(&userInfo)
+					if len(userInfo.Login) == 0 {
+						userInfo = UserInfo{
+							[]byte((*msg)["login"].(string)),
+							[]byte((*msg)["password"].(string)),
+							0,
+							time.Now(),
+							time.Now(),
+						}
+						client.server.db.Create(&userInfo)
+					}
+					(*client).userInfo = &userInfo
+					*apiReturn = APIReturn{"AUTH_OK", GetJSONUserInfo(userInfo.Login, userInfo.Password, userInfo.Power), nil, nil}
 				} else {
 					*apiReturn = APIReturn{"AUTH_ERROR", `{"type": "autorization", "result": "falled" ,"error": "erro"}`, nil, nil}
 				}
@@ -134,4 +148,8 @@ func CreateInterfaceMessage(room_name string, user string, message string) *map[
 	mapInterface["user"] = user
 	mapInterface["message"] = message
 	return &mapInterface
+}
+
+func GetJSONUserInfo(login []byte, password []byte, power int) string {
+	return `{"type":"status", "action": "authorization", "status": "success", "power":` + strconv.Itoa(power) + `, "result": "ok", "login": "` + string(login) + `","password": "` + string(password) + `"}`
 }

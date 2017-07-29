@@ -19,6 +19,7 @@ type Client struct {
 	server *Server
 	ch     chan *Message
 	doneCh chan bool
+	userInfo *UserInfo
 	login string
 	room_uuid string
 	isAuth bool
@@ -40,7 +41,7 @@ func NewClient(ws *websocket.Conn, server *Server, db *gorm.DB) *Client {
 	ch := make(chan *Message, channelBufSize)
 	doneCh := make(chan bool)
 
-	return &Client{maxId, ws, server, ch, doneCh, "Unknown", "", false, db}
+	return &Client{maxId, ws, server, ch, doneCh, &UserInfo{}, "Unknown", "", false, db}
 }
 
 func (c *Client) Conn() *websocket.Conn {
