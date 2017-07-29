@@ -153,12 +153,14 @@ func (s *Server) Listen() {
 				m = Message{ar.Type, *(ar.Interface)}
 			}
 			log.Print(m)
-			if ar.ReturnVariable == nil {
-				s.sendToClient(v.Client, &m)
-			} else {
+			if ar.ReturnVariable != nil {
 				if ar.ReturnVariable.code == 7777 {
 					s.sendAll(&m)
+				} else {
+					s.sendToClient(v.Client, &m)
 				}
+			} else {
+				s.sendToClient(v.Client, &m)
 			}
 			if strings.Contains(ar.Type, "AUTH_ERROR") {
 				time.Sleep(1)

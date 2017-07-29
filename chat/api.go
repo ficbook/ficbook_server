@@ -85,25 +85,47 @@ func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn)
 					case "send":
 						switch subject {
 							case "message":
-								message := (*msg)["message"].(string)
-									room := GetSpecialRoomByName(client.server.rooms, (*msg)["room_name"].(string))
+								isCommand := false
+								if (*msg)["message"].(string)[0] == '!' {
+									isCommand = true
+								}
+								room := GetSpecialRoomByName(client.server.rooms, (*msg)["room_name"].(string))								
+								if strings.Contains(room.Type, "system") && client.userInfo.Power < 100 {
+									*apiReturn = *CreateCustomEvent("CHAT_SEND_MESSAGE", "You do not have permission to post in this room")
+								} else {
+									returnVariable := ReturnVariable{nil, 7777, ""}
+									endMessage := (*msg)["message"].(string)
 									mapInterface := CreateInterfaceMessage((*msg)["room_name"].(string), "", "")
-									if strings.Contains(room.Type, "public") {
-										(*mapInterface)["user"] = client.login							
-										(*mapInterface)["message"] = message
+									if strings.Contains(room.Type, "system") || isCommand {
+										(*mapInterface)["user"] = "Ficbook Chat Message"
+									} else {
+										(*mapInterface)["user"] = client.login
+									}
+									if isCommand {
+										returnVariable = ReturnVariable{nil, 0, ""}
+										switch endMessage[1:] {
+											default:
+												endMessage = "This command does not exist. Enter !help to view commands"
+											case "help":
+												endMessage = "!test - Testing the command"
+											case "test":
+												endMessage = "Test message!"
+										}
+									}
+									(*mapInterface)["message"] = endMessage
+									if !isCommand {
 										client.server.db.Table("chat_message_all").Create(&ChatMessageSQL{
-											Login: client.login,
-											Message: message,
+											Login: (*mapInterface)["user"].(string),
+											Message: endMessage,
 											Timestamp: time.Now(),
 											RoomUUID: room.UUID,
 										})
-										*apiReturn = APIReturn{"CHAT_SEND_MESSAGE", "", mapInterface, &ReturnVariable{nil, 7777, ""}}
-									} else {
-										*apiReturn = *CreateCustomEvent("CHAT_SEND_MESSAGE", "You do not have permission to post in this room")
 									}
+									*apiReturn = APIReturn{"CHAT_SEND_MESSAGE", "", mapInterface, &returnVariable}
 								}
 						}
 				}
+		}
 	} else {
 		*apiReturn = APIReturn{"ERROR", `{"type": "Error", "result": "falled", "error": "Missing type key"}`, nil, nil}
 	}
