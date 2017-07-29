@@ -73,6 +73,14 @@ func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn)
 								}
 								//vv := ParseMessageQuery(client, messageJSON, apiReturn)
 								*apiReturn = APIReturn{"CHAT_GET_HISTORY", "", nil, &ReturnVariable{&messageJSON, 0, ""}}
+							case "participants":
+								room := GetSpecialRoomByName(client.server.rooms, (*msg)["room_name"].(string))
+								messageJSON := make(map[string]interface{})
+								messageJSON["type"] = "room"
+								messageJSON["object"] = "about"
+								messageJSON["room_name"] = room.Name
+								messageJSON["about"] = room.About
+								*apiReturn = APIReturn{"ROOM_GET_PARTICIPANTS", "", &messageJSON, nil}
 						}
 					case "send":
 						switch subject {
