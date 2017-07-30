@@ -128,7 +128,7 @@ func (c *Client) listenRead() {
 						vv := ParseQuery(c, &ar)
 						c.server.SendQuery(vv)
 					case "ROOM_JOIN":
-						room := GetSpecialRoomByName(c.server.rooms, c.room_uuid)
+						room := c.server.GetSpecialRoomByUUID(c.room_uuid)
 						mesJSON := make(map[string]interface{})
 						mesJSON["type"] = "event"
 						mesJSON["action"] = "join"
@@ -148,7 +148,7 @@ func (c *Client) listenRead() {
 						c.server.SendQuery(vv)
 						c.room_uuid = vv.ApiReturn.ReturnVariable.string
 						var messageSQL []*ChatMessageSQL
-						c.server.db.Table("chat_message_all").Where("room_uuid = ?", GetSpecialRoomByName(c.server.rooms, msg["room_name"].(string)).UUID).Order("id desc").Find(&messageSQL).Limit(10)
+						c.server.db.Table("chat_message_all").Where("room_uuid = ?", c.server.GetSpecialRoomByName(msg["room_name"].(string)).UUID).Order("id desc").Find(&messageSQL).Limit(10)
 						var messageJSON []ChatMessageJSON
 						for _, mes := range(messageSQL) {
 							messageJSON = append(messageJSON, NewChatMessageJSON(mes.Login, mes.Message, mes.Timestamp))

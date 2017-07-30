@@ -51,7 +51,8 @@ func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn)
 				action_msg, _ := (*msg)["action"]
 				switch action_msg {
 					case "join":
-						*apiReturn = APIReturn{"ROOM_JOIN", `{"type":"room","object":"about","room_name":"`+(*msg)["room_name"].(string)+`","about":"Unknown"}`, nil, &ReturnVariable{nil, 0, (*msg)["room_name"].(string)}}
+						room := client.server.GetSpecialRoomByName((*msg)["room_name"].(string))
+						*apiReturn = APIReturn{"ROOM_JOIN", `{"type":"room","object":"about","room_name":"`+room.Name+`","about":"`+room.About+`"}`, nil, &ReturnVariable{nil, 0, room.Name}}
 				}
 			case "chat":
 				action_msg, _ := (*msg)["action"]
@@ -66,7 +67,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn)
 								var messageSQL []*ChatMessageSQL
 								//tN := time.Now().Local().Add(time.Hour * time.Duration(3) + time.Minute * time.Duration(0) + time.Second * time.Duration(0))
 								//client.server.db.Table("chat_message_all").Order("timestamp desc").Where("timestamp BETWEEN ? AND ?", timestamp, tN).Find(&messageSQL).Limit(20)
-								client.server.db.Table("chat_message_all").Order("timestamp desc").Where("timestamp <= ?", timestamp).Where("room_uuid = ?", GetSpecialRoomByName(client.server.rooms, (*msg)["room_name"].(string)).UUID).Find(&messageSQL).Limit(20)
+								client.server.db.Table("chat_message_all").Order("timestamp desc").Where("timestamp <= ?", timestamp).Where("room_uuid = ?", client.server.GetSpecialRoomByName((*msg)["room_name"].(string)).UUID).Find(&messageSQL).Limit(20)
 								var messageJSON []ChatMessageJSON
 								for _, mes := range(messageSQL) {
 									messageJSON = append(messageJSON, NewChatMessageJSON(mes.Login, mes.Message, mes.Timestamp))
@@ -74,7 +75,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn)
 								//vv := ParseMessageQuery(client, messageJSON, apiReturn)
 								*apiReturn = APIReturn{"CHAT_GET_HISTORY", "", nil, &ReturnVariable{&messageJSON, 0, ""}}
 							case "participants":
-								room := GetSpecialRoomByName(client.server.rooms, (*msg)["room_name"].(string))
+								room := client.server.GetSpecialRoomByName((*msg)["room_name"].(string))
 								messageJSON := make(map[string]interface{})
 								messageJSON["type"] = "room"
 								messageJSON["object"] = "about"
@@ -90,7 +91,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn)
 								if endMessage[0] == '!' {
 									isCommand = true
 								}
-								room := GetSpecialRoomByName(client.server.rooms, (*msg)["room_name"].(string))								
+								room := client.server.GetSpecialRoomByName((*msg)["room_name"].(string))								
 								if strings.Contains(room.Type, "system") && client.userInfo.Power < 100 {
 									*apiReturn = *CreateCustomEvent("CHAT_SEND_MESSAGE", "You do not have permission to post in this room")
 								} else {
@@ -115,21 +116,14 @@ func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn)
 												if client.userInfo.Power < 1000 {
 													endMessage = "You do not have permission to use this command"
 												} else {
-													if len(messages) == 1 {
-														endMessage = "refresh:\n\trooms"
-													} else {
+													endMessage = "refresh:\n\trooms"
+													if len(messages) > 1 {
 														switch messages[1] {
 															case "rooms":
-																rooms := []*Room{}
-																var roomsSQL []*Room
-																client.server.db.Table("chat_rooms").Find(&roomsSQL)
-																for _, room := range roomsSQL {
-																	rooms = append(rooms, NewRoom(room.Id, room.Name, room.Topic, room.About, room.Type, room.UUID))
-																}
-																client.server.rooms = rooms
-																endMessage = "Rooms successfully updated"
+																client.server.RefreshRoom()
+																endMessage = ""
 															}
-														}
+														}														
 												}									
 										}
 									}

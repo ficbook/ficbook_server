@@ -17,13 +17,24 @@ func NewUUID() string {
 	return fmt.Sprint(u.NewV4())
 }
 
-func GetSpecialRoomByName(rooms []*Room, name string) *Room {
+func (s *Server) GetSpecialRoomByName(name string) *Room {
 	var index int
-	for i, room := range(rooms) {
+	for i, room := range(s.rooms) {
 		if strings.Contains(room.Name, name) {
 			index = i
 			break
 		}
 	}
-	return rooms[index]
+	return s.rooms[index]
+}
+
+func (s *Server) GetSpecialRoomByUUID(uuid string) *Room {
+	var index int
+	for i, room := range(s.rooms) {
+		if strings.Contains(room.UUID, uuid) {
+			index = i
+			break
+		}
+	}
+	return s.rooms[index]
 }
