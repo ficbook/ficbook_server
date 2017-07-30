@@ -6,4 +6,5 @@ First of all, we need to download some libraries. To do this, we use the go get:
 Now you can start the project or compile it!<br><br>
 
 Available flags:
-* -config: `go run main.go -config=config.cfg`. Default: config.cfg
+* -config: `go run main.go -config=config.cfg`. Default: config.cfg <br>
+Example: `go run main.go -config=myproject/server/config.cfg`
