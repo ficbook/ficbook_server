@@ -15,6 +15,8 @@ func main() {
 	log.SetFlags(log.Lshortfile)
 
 	configPtr := flag.String("config", "config.cfg", "Path to the configuration file")
+	buildDB := flag.Bool("rebuild", false, "Update the database table")
+	createRoom := flag.String("create-room", "", "Creates a room")
 	flag.Parse()
 
 	cfgInfo := make(map[string]string)
@@ -23,11 +25,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	db, err := gorm.Open(cfgInfo["db_server"], cfgInfo["db_user"] + ":" + cfgInfo["db_password"] + "@/" + cfgInfo["db_table"] + "?charset=utf8mb4&parseTime=true")
+	db, err := gorm.Open(cfgInfo["db_server"], cfgInfo["db_user"] + ":" + cfgInfo["db_password"] + "@/" + cfgInfo["db_db"] + "?charset=utf8mb4&parseTime=true")
 	defer db.Close()
 
 	// websocket server
-	server := chat.NewServer(cfgInfo["server_pattern"], db)
+	server := chat.NewServer(cfgInfo["server_pattern"], db, buildDB, createRoom)
 	go server.Listen()
 
 	log.Fatal(http.ListenAndServe(cfgInfo["server_ip"] + ":" + cfgInfo["server_port"], nil))

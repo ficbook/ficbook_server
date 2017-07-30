@@ -26,7 +26,7 @@ type Server struct {
 }
 
 // Create new chat server.
-func NewServer(pattern string, db *gorm.DB) *Server {
+func NewServer(pattern string, db *gorm.DB, isRebuild *bool, createRoom *string) *Server {
 	messages := []*Message{}
 	clients := make(map[int]*Client)
 	addCh := make(chan *Client)
@@ -35,6 +35,15 @@ func NewServer(pattern string, db *gorm.DB) *Server {
 	sendQuery := make(chan *InfoQuery)
 	doneCh := make(chan bool)
 	errCh := make(chan error)
+
+	if *isRebuild {
+		db.AutoMigrate(&UserInfo{},&ChatMessageSQL{})
+		db.Table("chat_rooms").AutoMigrate(&Room{})
+	}
+
+	if len(*createRoom) > 0 {
+		db.Table("chat_rooms").Create(CreateRoom(0, *createRoom, "", *createRoom, "public"))
+	}
 
 	rooms := []*Room{}
 	var roomsSQL []*Room

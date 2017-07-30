@@ -8,3 +8,7 @@ Now you can start the project or compile it!<br><br>
 Available flags:
 * -config: `go run main.go -config=config.cfg`. Default: config.cfg <br>
 Example: `go run main.go -config=myproject/server/config.cfg`
+* -rebuild: `go run main.go -rebuild=true`. Default: false<br>
+Added database migration
+* -create-room `go run main.go -create-room=RoomName`. Default: ""<br>
+Creates a public room named RoomName

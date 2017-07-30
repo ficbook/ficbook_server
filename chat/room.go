@@ -7,8 +7,8 @@ type Room struct {
 	About string `json:"about"`
 	Type string `json:"type"`
 	UUID string `json:"uuid"`
-	Users []*Client `json:"users"`
-	LenUsers int `json:"count_users"`
+	Users []*Client `json:"users" sql:"-"`
+	LenUsers int `json:"count_users" sql:"-"`
 }
 
 //NewRoom returns the address of the room
