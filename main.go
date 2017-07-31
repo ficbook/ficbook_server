@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"fmt"
 	"net/http"
 	"flag"
 	"github.com/jinzhu/gorm"
@@ -11,11 +12,19 @@ import (
 	"github.com/yanzay/cfg"
 )
 
+func parseCommand(s *string) {
+	for true {
+		fmt.Print(">>> ")
+		fmt.Scanln(s)
+		fmt.Println(*s)
+	}
+}
+
 func main() {
 	log.SetFlags(log.Lshortfile)
 
 	configPtr := flag.String("config", "config.cfg", "Path to the configuration file")
-	buildDB := flag.Bool("rebuild", false, "Update the database table")
+	buildDB := flag.Bool("database-init", false, "Update the database table")
 	createRoom := flag.String("create-room", "", "Creates a room")
 	flag.Parse()
 
@@ -31,6 +40,9 @@ func main() {
 	// websocket server
 	server := chat.NewServer(cfgInfo["server_pattern"], db, buildDB, createRoom)
 	go server.Listen()
+
+	var stringCommand string
+	go parseCommand(&stringCommand)
 
 	log.Fatal(http.ListenAndServe(cfgInfo["server_ip"] + ":" + cfgInfo["server_port"], nil))
 }
