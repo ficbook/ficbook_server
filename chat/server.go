@@ -165,6 +165,11 @@ func (s *Server) Listen() {
 			if ar.ReturnVariable != nil {
 				if ar.ReturnVariable.code == 7777 {
 					s.sendAll(&m)
+				} else if ar.ReturnVariable.code == 3535 {
+					room := client.server.GetSpecialRoomByUUID(ar.ReturnVariable.string)
+					for _, u := range(room.Users) {
+						s.sendToClient(u, &m)
+					}
 				} else {
 					s.sendToClient(v.Client, &m)
 				}

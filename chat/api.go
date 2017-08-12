@@ -124,7 +124,10 @@ func ParseAPI(client *Client, msg *map[string]interface{}, apiReturn *APIReturn)
 																endMessage = ""
 															}
 														}														
-												}									
+												}
+											case "test2":
+												room := client.server.GetSpecialRoomByName((*msg)["room_name"].(string))
+												GetLoginUsers(room)
 										}
 									}
 									(*mapInterface)["message"] = endMessage
@@ -157,7 +160,7 @@ func ParseQuery(client *Client, apiReturn *APIReturn) *InfoQuery {
 func ParseMessageQuery(client *Client, messages *[]ChatMessageJSON, apiReturn *APIReturn) *InfoQuery {
 	mapInterface := make(map[string]interface{})
 	mapInterface["type"] = "history"
-	mapInterface["name"] = client.room_uuid
+	mapInterface["name"] = client.roomUUID
 	mapInterface["messages"] = *messages
 	if len(*messages) == 0 {
 		mapInterface["messages"] = []int{}
@@ -181,6 +184,33 @@ func CreateCustomEvent(typeAPI string, message string) *APIReturn {
 	return &APIReturn{typeAPI, "", &mapInterface, nil}
 }
 
+func CreateEventUsersInfo(client *Client, action string, room *Room, code int) *APIReturn {
+	if strings.Contains(action, "join") {
+		room.Users = append(room.Users, client)
+		room.LenUsers++
+	} else if strings.Contains(action, "leave") {
+		room.LenUsers--		
+		RemoveAt(client, room)
+	}
+	mapInterface := make(map[string]interface{})
+	mapInterface["type"] = "event"
+	mapInterface["action"] = action
+	mapInterface["users_count"] = room.LenUsers
+	mapInterface["user_name"] = string(client.userInfo.Login)
+	mapInterface["room_name"] = room.Name
+	return &APIReturn{"CUSTOM_EVENT_COUNT_USERS", "", &mapInterface, &ReturnVariable{nil, code, room.UUID}}
+}
+
+func (client *Client) CreateEventUsersList(room *Room, code int) *APIReturn {
+	mapInterface := make(map[string]interface{})
+	mapInterface["type"] = "chat"
+	mapInterface["action"] = "get"
+	mapInterface["object"] = "participants"
+	mapInterface["room_name"] = room.Name
+	mapInterface["participants"] = *GetLoginUsers(room)
+	return &APIReturn{"CHAT_GET_PARTICIPANTS_LOGINS", "", &mapInterface, &ReturnVariable{nil, code, room.UUID}}
+}
+
 func CreateInterfaceMessage(room_name string, user string, message string) *map[string]interface{} {
 	if strings.Contains(user, "") {
 		user = "Ficbook Chat Bot"
@@ -197,4 +227,15 @@ func CreateInterfaceMessage(room_name string, user string, message string) *map[
 
 func GetJSONUserInfo(login []byte, password []byte, power int) string {
 	return `{"type":"status", "action": "authorization", "status": "success", "power":` + strconv.Itoa(power) + `, "result": "ok", "login": "` + string(login) + `","password": "` + string(password) + `"}`
+}
+
+func GetLoginUsers(room *Room) *[]string {
+	var logins []string
+	for _, r := range(room.Users) {
+		logins = append(logins, string(r.userInfo.Login))
+	}
+	if len(logins) == 0 {
+		logins = []string{}
+	}
+	return &logins
 }
