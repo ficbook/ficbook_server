@@ -191,12 +191,7 @@ func (s *Server) Listen() {
 	}
 }
 
-func (s *Server) RefreshRoom() {
-	rooms := []*Room{}
-	var roomsSQL []*Room
-	s.db.Table("chat_rooms").Find(&roomsSQL)
-	for _, room := range roomsSQL {
-		rooms = append(rooms, NewRoom(room.Id, room.Name, room.Topic, room.About, room.Type, room.UUID))
-	}
-	s.rooms = rooms
+func (s *Server) UpdateRoomOnline(updateTime int) {
+	s.UpdateOnline(updateTime)
 }
+
