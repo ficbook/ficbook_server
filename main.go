@@ -2,14 +2,12 @@ package main
 
 import (
 	"log"
-	"fmt"
 	"net/http"
+	"fmt"
 	"flag"
-	"strconv"
+	"./chat"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
-	"github.com/ficbook/ficbook_server/chat"
-	//"./chat_d"
 	"github.com/yanzay/cfg"
 )
 
@@ -42,12 +40,8 @@ func main() {
 	server := chat.NewServer(cfgInfo["server_pattern"], db, buildDB, createRoom)
 	go server.Listen()
 
-	// Updating count of users
-	updateTime, _ := strconv.Atoi(cfgInfo["update_time"])
-	go server.UpdateRoomOnline(updateTime)
-
 	var stringCommand string
 	go parseCommand(&stringCommand)
-
-	log.Fatal(http.ListenAndServe(cfgInfo["server_ip"] + ":" + cfgInfo["server_port"], nil))
+	
+	log.Fatal(http.ListenAndServe(":7070", nil))
 }

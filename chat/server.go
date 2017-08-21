@@ -5,9 +5,8 @@ import (
 	"net/http"
 	"time"
 	"strings"
-	"golang.org/x/net/websocket"
-	"encoding/json"
 	"github.com/jinzhu/gorm"
+	"github.com/gorilla/websocket"
 )
 
 // Chat server.
@@ -67,6 +66,8 @@ func NewServer(pattern string, db *gorm.DB, isRebuild *bool, createRoom *string)
 	}
 }
 
+var upgrader = websocket.Upgrader{}
+
 func (s *Server) Add(c *Client) {
 	s.addCh <- c
 }
@@ -106,9 +107,6 @@ func (s *Server) sendAll(msg *Message) {
 func (s *Server) sendToClient(client *Client, msg *Message) {
 	client.Write(msg)
 }
-
-
-
 // Listen and serve.
 // It serves client connection and broadcast request.
 func (s *Server) Listen() {
@@ -116,19 +114,18 @@ func (s *Server) Listen() {
 	log.Println("Listening server...")
 
 	// websocket handler
-	onConnected := func(ws *websocket.Conn) {
-		defer func() {
-			err := ws.Close()
-			if err != nil {
-				s.errCh <- err
-			}
-		}()
+	onConnected := func(w http.ResponseWriter, r *http.Request) {
+		c, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			log.Fatalf("onConnected", err)
+			return
+		}
 
-		client := NewClient(ws, s, s.db)
+		client := NewClient(c, s, s.db)
 		s.Add(client)
 		client.Listen()
 	}
-	http.Handle(s.pattern, websocket.Handler(onConnected))
+	http.HandleFunc(s.pattern, onConnected)
 	log.Println("Created handler")
 
 	for {
@@ -136,45 +133,38 @@ func (s *Server) Listen() {
 
 		// Add new a client
 		case c := <-s.addCh:
+			log.Println("Added new client")
 			s.clients[c.id] = c
 			log.Println("Now", len(s.clients), "clients connected.")
-			//s.sendPastMessages(c)
+			s.sendPastMessages(c)
 
 		// del a client
 		case c := <-s.delCh:
+			log.Println("Delete client")
 			delete(s.clients, c.id)
 
 		// broadcast message for all clients
 		case msg := <-s.sendAllCh:
-			//log.Println("Send all:", msg)
+			log.Println("Send all:", msg)
 			s.messages = append(s.messages, msg)
 			s.sendAll(msg)
 
 		case v := <-s.sendQuery:
 			ar := *v.ApiReturn
-			client := *v.Client
-			var m Message
-			if ar.Interface == nil {
-				interf := make(map[string]interface{})
-				json.Unmarshal([]byte(ar.Text), &interf)
-				m = Message{ar.Type, interf}
-			} else {
-				m = Message{ar.Type, *(ar.Interface)}
-			}
-			log.Print(m)
+			client := v.Client
+			m := Message{ar.Type, *ar.Interface}
 			if ar.ReturnVariable != nil {
-				if ar.ReturnVariable.code == 7777 {
-					s.sendAll(&m)
-				} else if ar.ReturnVariable.code == 3535 {
-					room := client.server.GetSpecialRoomByUUID(ar.ReturnVariable.string)
-					for _, u := range(room.Users) {
-						s.sendToClient(u, &m)
+				if ar.ReturnVariable.ReturnRoom != nil {
+					if ar.ReturnVariable.int == 35 {
+						for _, user := range(ar.ReturnVariable.ReturnRoom.Users) {
+							if user.roomUUID == ar.ReturnVariable.ReturnRoom.Name {
+								s.sendToClient(user, &m)
+							}
+						}
 					}
-				} else {
-					s.sendToClient(v.Client, &m)
 				}
 			} else {
-				s.sendToClient(v.Client, &m)
+				s.sendToClient(client, &m)
 			}
 			if strings.Contains(ar.Type, "AUTH_ERROR") {
 				time.Sleep(1)
@@ -182,16 +172,11 @@ func (s *Server) Listen() {
 				delete(s.clients, client.id)
 			}
 
-	//	case err := <-s.errCh:
-	//		continue
+		case err := <-s.errCh:
+			log.Println("Error:", err.Error())
 
 		case <-s.doneCh:
 			return
 		}
 	}
 }
-
-func (s *Server) UpdateRoomOnline(updateTime int) {
-	s.UpdateOnline(updateTime)
-}
-

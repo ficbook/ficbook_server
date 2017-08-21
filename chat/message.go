@@ -2,10 +2,9 @@ package chat
 
 import "time"
 
-
 type Message struct {
 	Type string `json:"type"`
-	Text map[string]interface{} `json:"data"`
+	Text map[string]interface{}
 }
 
 func (self *Message) String() string {

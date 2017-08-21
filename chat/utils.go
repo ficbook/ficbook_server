@@ -6,6 +6,27 @@ import (
 	"fmt"
 	"time"
 	u "github.com/satori/go.uuid"
+	//"golang.org/x/net/websocket"
+	//"github.com/gorilla/websocket"
+)
+
+const (
+	// Time allowed to write a message to the peer.
+	writeWait = 10 * time.Second
+
+	// Time allowed to read the next pong message from the peer.
+	pongWait = 60 * time.Second
+
+	// Send pings to peer with this period. Must be less than pongWait.
+	pingPeriod = (pongWait * 9) / 10
+
+	// Maximum message size allowed from peer.
+	maxMessageSize = 512
+)
+
+var (
+	newline = []byte{'\n'}
+	space   = []byte{' '}
 )
 
 func GenerateToken() string {
@@ -48,14 +69,18 @@ func RemoveAt(client *Client, room *Room) {
 			break
 		 }
 	}
-	copy(room.Users[index:], room.Users[index+1:])
-	room.Users[len(room.Users)-1] = nil // or the zero value of T
-	room.Users = room.Users[:len(room.Users)-1]
-	fmt.Println(room.Users)
+	if index >= 0 {
+		copy(room.Users[index:], room.Users[index+1:])
+		room.Users[len(room.Users)-1] = nil // or the zero value of T
+		room.Users = room.Users[:len(room.Users)-1]
+	} else {
+		fmt.Print("ERROR: index = -1")
+	}
 }
 
 func (room *Room) RemoveByIndex(index int) {
 	copy(room.Users[index:], room.Users[index+1:])
+	room.Users[len(room.Users)-1].ws.Close()
 	room.Users[len(room.Users)-1] = nil // or the zero value of T
 	room.Users = room.Users[:len(room.Users)-1]
 	fmt.Println(room.Users)
@@ -71,6 +96,26 @@ func (s *Server) RefreshRoom() {
 	s.rooms = rooms
 }
 
+func GetLoginUsers(users []*Client) *[]string {
+	var logins []string
+	for _, u := range(users) {
+		logins = append(logins, string(u.userInfo.Login))
+	}
+	if len(logins) == 0 {
+		logins = []string{}
+	}
+	return &logins
+}
+/*
+func sendCheck(c *websocket.Conn) {
+	websocket.JSON.Send(c, `{"status":"check"}`)
+	defer func() {
+		if r := recover(); r != nil{
+
+		}
+	}()
+}
+
 func (s *Server) UpdateOnline(updateTime int) {
 	updateLastTime := time.Duration(updateTime) * time.Millisecond
 	for {
@@ -80,7 +125,19 @@ func (s *Server) UpdateOnline(updateTime int) {
 			count = 0
 			for i, user := range(room.Users) {
 				if user.ws.IsServerConn() {
-					count++
+					websocket.JSON.Send(user.ws, `{"status":"check"}`)
+					defer func() {
+						if r := recover(); r != nil {
+							room.RemoveByIndex(i)
+						} else {
+							count++
+						}
+					}()
+				/*	if err := user.ws..JSON.Send(user.ws, "s_c"); err != nil {
+						fmt.Println("Can't send echo")
+						break
+					}*//*
+					
 				} else {
 					room.RemoveByIndex(i)
 				}
@@ -94,3 +151,4 @@ func (s *Server) UpdateOnline(updateTime int) {
 		time.Sleep(updateLastTime)
 	}
 }
+*/

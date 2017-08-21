@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"golang.org/x/net/websocket"
+	"time"
 	"github.com/jinzhu/gorm"
+	"github.com/gorilla/websocket"
 )
 
 const channelBufSize = 100
@@ -36,7 +37,7 @@ func NewClient(ws *websocket.Conn, server *Server, db *gorm.DB) *Client {
 	if server == nil {
 		panic("server cannot be nil")
 	}
-	
+
 	maxId++
 	ch := make(chan *Message, channelBufSize)
 	doneCh := make(chan bool)
@@ -76,14 +77,10 @@ func (c *Client) listenWrite() {
 
 		// send message to the client
 		case msg := <-c.ch:
-			if c.isAuth {
-				websocket.JSON.Send(c.ws, msg.Text)
-			} else {
-				intf := make(map[string]interface{})
-				intf["type"] = "error"
-				intf["error"] = "You are not authorized"
-				websocket.JSON.Send(c.ws, intf)
-			}
+			log.Println("Send:", msg.Type)
+			log.Println("Send:", msg.Text)
+			//websocket.JSON.Send(c.ws, msg)
+			websocket.WriteJSON(c.ws, msg.Text)
 
 		// receive done request
 		case <-c.doneCh:
@@ -109,65 +106,27 @@ func (c *Client) listenRead() {
 		// read data from websocket connection
 		default:
 			var msg map[string]interface{}
-			err := websocket.JSON.Receive(c.ws, &msg)
+			//err := websocket.JSON.Receive(c.ws, &msg)
+			err := websocket.ReadJSON(c.ws, &msg)
 			if err == io.EOF {
 				c.doneCh <- true
 			} else if err != nil {
+				c.ws.Close()
+				c.doneCh <- true
 				c.server.Err(err)
 			} else {
-				var ar APIReturn
+				var ars []*APIReturn
 				log.Println(msg)
-				ParseAPI(c, &msg, &ar)
-				switch ar.Type {
-					default:
-						vv := ParseQuery(c, &ar)
-						c.server.SendQuery(vv)
-					case "AUTH_OK":
-						(*c).isAuth = true
-						(*c).login = msg["login"].(string)
-						vv := ParseQuery(c, &ar)
-						c.server.SendQuery(vv)
-					case "ROOM_JOIN":
-						if len(c.roomUUID) > 1 {
-							localRoom := c.server.GetSpecialRoomByName(c.roomUUID)
-							vv := ParseQuery(c, CreateEventUsersInfo(c, "leave", localRoom, 3535))
-							c.server.SendQuery(vv)
-						}
-						room := c.server.GetSpecialRoomByName(msg["room_name"].(string))
-						log.Print(room)
-						vv := ParseQuery(c, CreateEventUsersInfo(c, "join", room, 3535))
-						c.server.SendQuery(vv)
-						c.roomUUID = room.Name
-						vv = ParseQuery(c, c.CreateEventUsersList(room, 3535))
-						c.server.SendQuery(vv)
-						mesJSON := make(map[string]interface{})
-						mesJSON["type"] = "event"
-						mesJSON["action"] = "room"
-						mesJSON["object"] = "about"
-						mesJSON["about"] = room.About
-						vv = ParseQuery(c, &APIReturn{"USER_ROOM_ABOUT", "", &mesJSON, nil})
-						c.server.SendQuery(vv)
-						vv = ParseQuery(c, &ar)
-						c.server.SendQuery(vv)
-						c.roomUUID = vv.ApiReturn.ReturnVariable.string
-						var messageSQL []*ChatMessageSQL
-						c.server.db.Table("chat_message_all").Where("room_uuid = ?", room.UUID).Order("id desc").Find(&messageSQL).Limit(10)
-						var messageJSON []ChatMessageJSON
-						for _, mes := range(messageSQL) {
-							messageJSON = append(messageJSON, NewChatMessageJSON(mes.Login, mes.Message, mes.Timestamp))
-						}
-						vv = ParseMessageQuery(c, &messageJSON, &ar)
-						c.server.SendQuery(vv)
-					case "CHAT_GET_HISTORY":
-						vv := ParseMessageQuery(c, ar.ReturnVariable.ChatMessageJson, &ar)
-						c.server.SendQuery(vv)
-					case "ROOM_GET_PARTICIPANTS":
-						vv := ParseQuery(c, &ar)
-						c.server.SendQuery(vv)
-						room := c.server.GetSpecialRoomByName(msg["room_name"].(string))
-						vv = ParseQuery(c, c.CreateEventUsersList(room, 3535))
-						c.server.SendQuery(vv)
+				ParseAPI(c, &msg, &ars)
+				//c.server.SendAll(&msg)
+				for _, ar := range(ars) {
+					switch ar.Type {
+						default:
+							c.server.SendQuery(ParseQuery(c, ar))
+					}
+					time.Sleep(1 * time.Millisecond)
 				}
+				ars = nil
 			}
 		}
 	}
