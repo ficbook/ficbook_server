@@ -7,7 +7,7 @@ type Room struct {
 	About string `json:"about"`
 	Type string `json:"type"`
 	UUID string `json:"uuid"`
-	Users []*Client `json:"users" sql:"-"`
+	Users map[int]*Client `json:"users" sql:"-"`
 	LenUsers int `json:"count_users" sql:"-"`
 }
 
@@ -20,7 +20,7 @@ func NewRoom(id int, name string, topic string, about, type_room string, UUID st
 		about,
 		type_room,
 		UUID,
-		[]*Client{},
+		make(map[int]*Client),
 		0,
 	}
 }
@@ -34,7 +34,7 @@ func CreateRoom(id int, name string, topic string, about string, type_room strin
 		about,
 		type_room,
 		NewUUID(),
-		[]*Client{},
+		make(map[int]*Client),
 		0,
 	}
 }

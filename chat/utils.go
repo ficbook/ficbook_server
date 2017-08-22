@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"time"
 	u "github.com/satori/go.uuid"
-	//"golang.org/x/net/websocket"
-	//"github.com/gorilla/websocket"
 )
 
 const (
@@ -61,29 +59,8 @@ func (s *Server) GetSpecialRoomByUUID(uuid string) *Room {
 	return s.rooms[index]
 }
 
-func RemoveAt(client *Client, room *Room) {
-	index := -1
-	for i, user := range(room.Users) {
-		 if user.roomUUID == client.roomUUID {
-			index = i
-			break
-		 }
-	}
-	if index >= 0 {
-		copy(room.Users[index:], room.Users[index+1:])
-		room.Users[len(room.Users)-1] = nil // or the zero value of T
-		room.Users = room.Users[:len(room.Users)-1]
-	} else {
-		fmt.Print("ERROR: index = -1")
-	}
-}
-
-func (room *Room) RemoveByIndex(index int) {
-	copy(room.Users[index:], room.Users[index+1:])
-	room.Users[len(room.Users)-1].ws.Close()
-	room.Users[len(room.Users)-1] = nil // or the zero value of T
-	room.Users = room.Users[:len(room.Users)-1]
-	fmt.Println(room.Users)
+func (room *Room) RemoveAt(clientID int) {
+	delete(room.Users, clientID)
 }
 
 func (s *Server) RefreshRoom() {
@@ -96,7 +73,7 @@ func (s *Server) RefreshRoom() {
 	s.rooms = rooms
 }
 
-func GetLoginUsers(users []*Client) *[]string {
+func GetLoginUsers(users map[int]*Client) *[]string {
 	var logins []string
 	for _, u := range(users) {
 		logins = append(logins, string(u.userInfo.Login))
@@ -106,15 +83,6 @@ func GetLoginUsers(users []*Client) *[]string {
 	}
 	return &logins
 }
-/*
-func sendCheck(c *websocket.Conn) {
-	websocket.JSON.Send(c, `{"status":"check"}`)
-	defer func() {
-		if r := recover(); r != nil{
-
-		}
-	}()
-}
 
 func (s *Server) UpdateOnline(updateTime int) {
 	updateLastTime := time.Duration(updateTime) * time.Millisecond
@@ -123,23 +91,17 @@ func (s *Server) UpdateOnline(updateTime int) {
 		var count int
 		for _, room := range(s.rooms) {
 			count = 0
-			for i, user := range(room.Users) {
-				if user.ws.IsServerConn() {
-					websocket.JSON.Send(user.ws, `{"status":"check"}`)
-					defer func() {
-						if r := recover(); r != nil {
-							room.RemoveByIndex(i)
-						} else {
-							count++
-						}
-					}()
-				/*	if err := user.ws..JSON.Send(user.ws, "s_c"); err != nil {
-						fmt.Println("Can't send echo")
-						break
-					}*//*
-					
+			for _, user := range(room.Users) {
+				checkMap := NewMap()
+				(*checkMap)["type"] = "check"
+				err := user.ws.WriteJSON(checkMap)
+				if err != nil {
+					fmt.Print("ERROR: ")
+					fmt.Println(err)
+					user.ws.Close()
+					room.RemoveAt(user.id)
 				} else {
-					room.RemoveByIndex(i)
+					count++
 				}
 			}
 			fmt.Printf(`Count of users in the room "%s" (before/now): `, room.Name)
@@ -148,7 +110,6 @@ func (s *Server) UpdateOnline(updateTime int) {
 			room.LenUsers = count
 		}
 		fmt.Println("=====================")
-		time.Sleep(updateLastTime)
+		time.Sleep(updateLastTime)	
 	}
 }
-*/

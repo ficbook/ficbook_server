@@ -27,6 +27,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 					client.server.db.Create(&userInfo)
 				}
 				(*client).userInfo = &userInfo
+				(*client).isAuth = true
 				returnMap := NewMap()
 				GetMapUserInfo(returnMap, userInfo.Login, userInfo.Password, userInfo.Power)
 				*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("AUTH_OK", returnMap, nil))
@@ -52,7 +53,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 					if localRoom.LenUsers > 0 {
 						returnMap := NewMap()
 						localRoom.LenUsers--
-						RemoveAt(client, localRoom)
+						localRoom.RemoveAt(client.id)
 						GetMapEventUserCount(returnMap, string(client.userInfo.Login), "leave", localRoom.Name, localRoom.LenUsers)
 						*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_LEAVE", returnMap, NewReturnVariableRoom(localRoom, 35)))
 					}
@@ -64,7 +65,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 
 				client.roomUUID = room.Name
 				room.LenUsers++
-				room.Users = append(room.Users, client)
+				room.Users[client.id] = client
 				returnMap = NewMap()
 				GetMapEventUserCount(returnMap, string(client.userInfo.Login), "join", room.Name, room.LenUsers)
 				*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_JOIN", returnMap, nil))

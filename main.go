@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"fmt"
 	"flag"
-	"./chat"
+	"strconv"
+	"github.com/ficbook/ficbook_server/chat"
+	//"./chat"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/yanzay/cfg"
@@ -39,6 +41,10 @@ func main() {
 	// websocket server
 	server := chat.NewServer(cfgInfo["server_pattern"], db, buildDB, createRoom)
 	go server.Listen()
+
+	// Updating count of users
+	updateTime, _ := strconv.Atoi(cfgInfo["update_time"])
+	go server.UpdateOnlineRooms(updateTime)
 
 	var stringCommand string
 	go parseCommand(&stringCommand)

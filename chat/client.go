@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"time"
 	"github.com/jinzhu/gorm"
 	"github.com/gorilla/websocket"
 )
@@ -124,7 +123,6 @@ func (c *Client) listenRead() {
 						default:
 							c.server.SendQuery(ParseQuery(c, ar))
 					}
-					time.Sleep(1 * time.Millisecond)
 				}
 				ars = nil
 			}

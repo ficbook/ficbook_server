@@ -152,6 +152,10 @@ func (s *Server) Listen() {
 		case v := <-s.sendQuery:
 			ar := *v.ApiReturn
 			client := v.Client
+			if !client.isAuth && ar.Type != "AUTH_OK" {
+				client.ws.Close()
+				delete(s.clients, client.id)
+			}
 			m := Message{ar.Type, *ar.Interface}
 			if ar.ReturnVariable != nil {
 				if ar.ReturnVariable.ReturnRoom != nil {
@@ -179,4 +183,8 @@ func (s *Server) Listen() {
 			return
 		}
 	}
+}
+
+func (s Server) UpdateOnlineRooms(updateTime int) {
+	s.UpdateOnline(updateTime)
 }
