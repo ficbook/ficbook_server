@@ -1,5 +1,9 @@
 package chat
 
+import (
+	"time"
+)
+
 //APIReturn - the structure returned by the ParseAPI function
 type APIReturn struct {
 	Type string `json:"type"`
@@ -17,6 +21,18 @@ type ReturnVariable struct {
 	string
 	int
 	ReturnRoom *Room
+}
+
+type Ban struct {
+	LoginBanned []byte `json:"login_banned"`
+	LoginBanning []byte `json:"login_baning"`
+	Reason string `json:"reason"`
+	TimeBan time.Time `json:"-"`
+	TimeExpired time.Time `json:"time_expired"`
+}
+
+func (b *Ban) TableName() string {
+	return "bans_list"
 }
 
 func NewAPIReturn(typeAPI string, interfaceAPI *map[string]interface{}, returnVariable *ReturnVariable) *APIReturn {

@@ -1,7 +1,7 @@
 package chat
 
 type Room struct {
-	Id int `json:"id"`
+	ID int `json:"id"`
 	Name string `json:"name"`
 	Topic string `json:"topic"`
 	About string `json:"about"`
@@ -37,4 +37,8 @@ func CreateRoom(id int, name string, topic string, about string, type_room strin
 		make(map[int]*Client),
 		0,
 	}
+}
+
+func (r *Room) TableName() string {
+	return "chat_rooms"
 }

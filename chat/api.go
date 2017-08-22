@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"time"
 	"strings"
+	"github.com/gorilla/websocket"
 )
 
 //ParseAPI works with the JSON requests
@@ -14,23 +15,40 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 		case "autorize":
 			isAuth := Authorization((*msg)["login"].(string), (*msg)["password"].(string))
 			if isAuth {
-				var userInfo UserInfo
-				client.server.db.Where("login = ?", (*msg)["login"].(string)).First(&userInfo)
-				if len(userInfo.Login) == 0 {
-					userInfo = UserInfo{
-						[]byte((*msg)["login"].(string)),
-						[]byte((*msg)["password"].(string)),
-						0,
-						time.Now(),
-						time.Now(),
+				isBan := false
+				var ban Ban
+				client.server.db.Where("login_banned = ?", (*msg)["login"].(string)).First(&ban)
+				if !ban.TimeBan.IsZero() {
+					if time.Now().Nanosecond() >= ban.TimeExpired.Nanosecond() {
+						localBan := Ban{LoginBanned:[]byte((*msg)["login"].(string))}
+						client.server.db.Delete(&localBan)
+					} else {
+						isBan = true
 					}
-					client.server.db.Create(&userInfo)
 				}
-				(*client).userInfo = &userInfo
-				(*client).isAuth = true
-				returnMap := NewMap()
-				GetMapUserInfo(returnMap, userInfo.Login, userInfo.Password, userInfo.Power)
-				*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("AUTH_OK", returnMap, nil))
+				if !isBan {
+					var userInfo UserInfo
+					client.server.db.Where("login = ?", (*msg)["login"].(string)).First(&userInfo)
+					if len(userInfo.Login) == 0 {
+						userInfo = UserInfo{
+							[]byte((*msg)["login"].(string)),
+							[]byte((*msg)["password"].(string)),
+							0,
+							time.Now(),
+							time.Now(),
+						}
+						client.server.db.Create(&userInfo)
+					}
+					(*client).userInfo = &userInfo
+					(*client).isAuth = true
+					returnMap := NewMap()
+					GetMapUserInfo(returnMap, userInfo.Login, userInfo.Password, userInfo.Power)
+					*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("AUTH_OK", returnMap, nil))
+				} else {
+					textMessage := "You are banned by " + string(ban.LoginBanning) + "\nReason: " + ban.Reason
+					client.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, textMessage))
+					client.Done()
+				}
 			} else {
 				returnMap := NewMap()
 				GetMapAuthError(returnMap)
@@ -68,7 +86,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 				room.Users[client.id] = client
 				returnMap = NewMap()
 				GetMapEventUserCount(returnMap, string(client.userInfo.Login), "join", room.Name, room.LenUsers)
-				*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_JOIN", returnMap, nil))
+				*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_JOIN", returnMap, NewReturnVariableRoom(room, 35)))
 
 				returnMap = NewMap()
 				GetMapRoomAbout(returnMap, room.Name, room.About)
@@ -124,7 +142,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 								isCommand = true
 							}
 							room := client.server.GetSpecialRoomByName((*msg)["room_name"].(string))								
-							if room.Type == "system" && client.userInfo.Power < 100 {
+							if room.Type == "system" && client.userInfo.Power < 10000 {
 								returnMap := NewMap()
 								GetMapCustomEvent(returnMap, "You do not have permission to post in this room")
 								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_SEND_MESSAGE", returnMap, nil))
@@ -132,7 +150,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 								returnMap := NewMap()
 								GetMapCreateMessage(returnMap, (*msg)["room_name"].(string), "", "")
 								if room.Type == "system" || isCommand {
-									userName = "Ficbook Chat Message"
+									userName = "System message"
 								}								
 								if isCommand {
 									messages := strings.Split(endMessage, " ")
@@ -144,7 +162,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 										case "test":
 											endMessage = "Test message!"
 										case "refresh":
-											if client.userInfo.Power < 1000 {
+											if client.userInfo.Power < 10000 {
 												endMessage = "You do not have permission to use this command"
 											} else {
 												endMessage = "refresh:\n\trooms"
@@ -173,6 +191,52 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 								}
 							}
 						}
+			}
+		case "administration":
+			actionMessage, _ := (*msg)["action"]
+			switch actionMessage {
+				case "get":
+					objectMessage, _ := (*msg)["object"]
+					switch objectMessage {
+						case "bans":
+							var bans []Ban
+							returnMap := NewMap()
+							client.server.db.Find(&bans)
+							GetMapListBans(returnMap, &bans)
+							*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_GET_BANS", returnMap, nil))
+					}
+				case "kik":
+					localClient, isSearch := client.server.SearchUser((*msg)["user_name"].(string))
+					if isSearch {
+						if client.userInfo.Power > localClient.userInfo.Power {
+							textMessage := "You are kicked by " + client.StringLogin() + "\nReason: " + (*msg)["message"].(string)
+							localClient.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, textMessage))
+							localClient.Done()
+						}
+					}
+				case "ban":
+					localClient, isSearch := client.server.SearchUser((*msg)["user_name"].(string))
+					if isSearch {
+						if client.userInfo.Power > localClient.userInfo.Power {
+							ban := Ban{
+								localClient.userInfo.Login,
+								client.userInfo.Login,
+								(*msg)["message"].(string),
+								time.Now(),
+								time.Now().Add(time.Duration(60) * time.Minute),
+								//time.Now().Add(time.Duration((*msg)["duration"].(float64)) * time.Nanosecond),
+							}
+							client.server.db.Create(&ban)
+
+							returnMap := NewMap()
+							GetMapCustomEvent(returnMap, "You banned " + (*msg)["user_name"].(string),)
+							*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_CUSTOM_MESSAGE", returnMap, nil))
+
+							textMessage := "You are banned by " + client.StringLogin() + "\nReason: " + (*msg)["message"].(string)
+							localClient.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, textMessage))
+							localClient.Done()
+						}
+					}
 			}
 		}
 	} else {
@@ -217,7 +281,7 @@ func GetMapAuthError(returnMap *map[string]interface{}) {
 	(*returnMap)["error"] = "erro"
 }
 
-func GetMapListRooms(returnMap *map[string]interface{}, rooms []*Room) {
+func GetMapListRooms(returnMap *map[string]interface{}, rooms map[int]*Room) {
 	var returnRooms []Room
 	for _, room := range rooms {
 		returnRooms = append(returnRooms, *room)
@@ -281,7 +345,7 @@ func GetMapCustomEvent(returnMap *map[string]interface{}, messageText string) {
 
 func GetMapCreateMessage(returnMap *map[string]interface{}, roomName string, userName string, messageText string) {
 	if strings.Contains(userName, "") {
-		userName = "Ficbook Chat Message"
+		userName = "System message"
 	}
 	(*returnMap)["type"] = "chat"
 	(*returnMap)["object"] = "message"
@@ -289,4 +353,21 @@ func GetMapCreateMessage(returnMap *map[string]interface{}, roomName string, use
 	(*returnMap)["room_name"] = roomName
 	(*returnMap)["user"] = userName
 	(*returnMap)["message"] = messageText
+}
+
+func GetMapListBans(returnMap *map[string]interface{}, bans *[]Ban) {
+	(*returnMap)["type"] = "list"
+	(*returnMap)["object"] = "bans"
+	if len(*bans) == 0 {
+		(*returnMap)["list"] = []string{}
+	} else {
+		(*returnMap)["list"] = *bans
+	}
+}
+
+func GetMapKicked(returnMap *map[string]interface{}, roomAbout string) {
+	(*returnMap)["type"] = "event"
+	(*returnMap)["action"] = "room"
+	(*returnMap)["object"] = "about"
+	(*returnMap)["about"] = roomAbout
 }

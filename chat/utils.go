@@ -64,11 +64,11 @@ func (room *Room) RemoveAt(clientID int) {
 }
 
 func (s *Server) RefreshRoom() {
-	rooms := []*Room{}
+	rooms := make(map[int]*Room)
 	var roomsSQL []*Room
-	s.db.Table("chat_rooms").Find(&roomsSQL)
+	s.db.Find(&roomsSQL)
 	for _, room := range roomsSQL {
-		rooms = append(rooms, NewRoom(room.Id, room.Name, room.Topic, room.About, room.Type, room.UUID))
+		rooms[room.ID] = NewRoom(room.ID, room.Name, room.Topic, room.About, room.Type, room.UUID)
 	}
 	s.rooms = rooms
 }
@@ -87,7 +87,6 @@ func GetLoginUsers(users map[int]*Client) *[]string {
 func (s *Server) UpdateOnline(updateTime int) {
 	updateLastTime := time.Duration(updateTime) * time.Millisecond
 	for {
-		fmt.Println("[Updating count of users]")
 		var count int
 		for _, room := range(s.rooms) {
 			count = 0
@@ -104,12 +103,20 @@ func (s *Server) UpdateOnline(updateTime int) {
 					count++
 				}
 			}
-			fmt.Printf(`Count of users in the room "%s" (before/now): `, room.Name)
-			fmt.Printf("[%d/", room.LenUsers)
-			fmt.Printf("%d]\n", count)
 			room.LenUsers = count
 		}
-		fmt.Println("=====================")
 		time.Sleep(updateLastTime)	
 	}
+}
+
+func (s *Server) SearchUser(userLogin string) (*Client, bool) {
+	isSearch := false
+	client := Client{}
+	for _, c := range(s.clients) {
+		if c.StringLogin() == userLogin {
+			client = *c
+			isSearch = true
+		}
+	}
+	return &client, isSearch
 }

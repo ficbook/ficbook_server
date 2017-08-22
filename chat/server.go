@@ -13,7 +13,7 @@ import (
 type Server struct {
 	pattern   string
 	messages  []*Message
-	rooms	  []*Room
+	rooms	  map[int]*Room
 	clients   map[int]*Client
 	addCh     chan *Client
 	delCh     chan *Client
@@ -36,19 +36,19 @@ func NewServer(pattern string, db *gorm.DB, isRebuild *bool, createRoom *string)
 	errCh := make(chan error)
 
 	if *isRebuild {
-		db.AutoMigrate(&UserInfo{},&ChatMessageSQL{})
-		db.Table("chat_rooms").AutoMigrate(&Room{})
+		db.AutoMigrate(&UserInfo{},&ChatMessageSQL{}, &Ban{})
+		db.AutoMigrate(&Room{})
 	}
 
 	if len(*createRoom) > 0 {
-		db.Table("chat_rooms").Create(CreateRoom(0, *createRoom, "", *createRoom, "public"))
+		db.Create(CreateRoom(0, *createRoom, "", *createRoom, "public"))
 	}
 
-	rooms := []*Room{}
+	rooms := make(map[int]*Room)
 	var roomsSQL []*Room
-	db.Table("chat_rooms").Find(&roomsSQL)
+	db.Find(&roomsSQL)
 	for _, room := range roomsSQL {
-		rooms = append(rooms, NewRoom(room.Id, room.Name, room.Topic, room.About, room.Type, room.UUID))
+		rooms[room.ID] = NewRoom(room.ID, room.Name, room.Topic, room.About, room.Type, room.UUID)
 	}
 
 	return &Server{

@@ -44,6 +44,10 @@ func NewClient(ws *websocket.Conn, server *Server, db *gorm.DB) *Client {
 	return &Client{maxId, ws, server, ch, doneCh, &UserInfo{}, "Unknown", "", false, db}
 }
 
+func (c *Client) StringLogin() string {
+	return string(c.userInfo.Login)
+}
+
 func (c *Client) Conn() *websocket.Conn {
 	return c.ws
 }
@@ -76,9 +80,8 @@ func (c *Client) listenWrite() {
 
 		// send message to the client
 		case msg := <-c.ch:
-			log.Println("Send:", msg.Type)
-			log.Println("Send:", msg.Text)
-			//websocket.JSON.Send(c.ws, msg)
+			//log.Println("Send:", msg.Type)
+			//log.Println("Send:", msg.Text)
 			websocket.WriteJSON(c.ws, msg.Text)
 
 		// receive done request
