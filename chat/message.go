@@ -19,6 +19,10 @@ type ChatMessageSQL struct {
 	RoomUUID string
 }
 
+func (c *ChatMessageSQL) TableName() string {
+	return "chat_message_all"
+}
+
 type ChatMessageJSON struct {
 	Login string `json:"login"`
 	Message string `json:"message"`
