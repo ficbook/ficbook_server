@@ -49,5 +49,5 @@ func main() {
 	var stringCommand string
 	go parseCommand(&stringCommand)
 	
-	log.Fatal(http.ListenAndServe(":7070", nil))
+	log.Fatal(http.ListenAndServe(cfgInfo["server_ip"] + ":" + cfgInfo["server_port"], nil))
 }
