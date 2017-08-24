@@ -154,13 +154,22 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 			case "send":
 					switch subject {
 						case "message":
+							room := client.server.GetSpecialRoomByName((*msg)["room_name"].(string))
+							if client.antiflood > 5 {
+								returnMap := NewMap()
+								GetMapCustomEvent(returnMap, client.StringLogin() + " was kicked by antiflood system")
+								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_CUSTOM_MESSAGE", returnMap, NewReturnVariableRoom(room, 35)))
+	
+								client.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, "You are kicked by antiflood system"))
+								client.Done()
+							}
+							client.antiflood++
 							isCommand := false
 							userName := string(client.userInfo.Login)
 							endMessage := (*msg)["message"].(string)
 							if endMessage[0] == '!' {
 								isCommand = true
-							}
-							room := client.server.GetSpecialRoomByName((*msg)["room_name"].(string))								
+							}						
 							if room.Type == "system" && client.userInfo.Power < 10000 {
 								returnMap := NewMap()
 								GetMapCustomEvent(returnMap, "You do not have permission to post in this room")

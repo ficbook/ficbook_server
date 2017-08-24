@@ -100,6 +100,7 @@ func (s *Server) UpdateOnline(updateTime int) {
 					user.ws.Close()
 					room.RemoveAt(user.id)
 				} else {
+					user.antiflood = 0
 					count++
 				}
 			}
