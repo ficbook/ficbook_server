@@ -209,6 +209,18 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 					localClient, isSearch := client.server.SearchUser((*msg)["user_name"].(string))
 					if isSearch {
 						if client.userInfo.Power > localClient.userInfo.Power {
+							room := client.server.GetSpecialRoomByName(localClient.roomUUID)
+							if room != nil {
+								room.LenUsers--
+								returnMap := NewMap()
+								GetMapUserClosed(returnMap, room.LenUsers, localClient.StringLogin(), room.Name)
+								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_CLOSE_INFO", returnMap, nil))
+							}
+
+							returnMap := NewMap()
+							GetMapCustomEvent(returnMap, "You kicked " + (*msg)["user_name"].(string),)
+							*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_CUSTOM_MESSAGE", returnMap, nil))
+
 							textMessage := "You are kicked by " + client.StringLogin() + "\nReason: " + (*msg)["message"].(string)
 							localClient.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, textMessage))
 							localClient.Done()
@@ -227,6 +239,14 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 								//time.Now().Add(time.Duration((*msg)["duration"].(float64)) * time.Nanosecond),
 							}
 							client.server.db.Create(&ban)
+
+							room := client.server.GetSpecialRoomByName(localClient.roomUUID)
+							if room != nil {
+								room.LenUsers--
+								returnMap := NewMap()
+								GetMapUserClosed(returnMap, room.LenUsers, localClient.StringLogin(), room.Name)
+								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_CLOSE_INFO", returnMap, nil))
+							}
 
 							returnMap := NewMap()
 							GetMapCustomEvent(returnMap, "You banned " + (*msg)["user_name"].(string),)
@@ -365,9 +385,10 @@ func GetMapListBans(returnMap *map[string]interface{}, bans *[]Ban) {
 	}
 }
 
-func GetMapKicked(returnMap *map[string]interface{}, roomAbout string) {
+func GetMapUserClosed(returnMap *map[string]interface{}, userCount int, userName string, roomName string) { 
 	(*returnMap)["type"] = "event"
-	(*returnMap)["action"] = "room"
-	(*returnMap)["object"] = "about"
-	(*returnMap)["about"] = roomAbout
+	(*returnMap)["action"] = "kiked"
+	(*returnMap)["users_count"] = userCount
+	(*returnMap)["user_name"] = userName
+	(*returnMap)["room_name"] = roomName
 }
