@@ -214,7 +214,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 								room.LenUsers--
 								returnMap := NewMap()
 								GetMapUserClosed(returnMap, room.LenUsers, localClient.StringLogin(), room.Name)
-								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_CLOSE_INFO", returnMap, nil))
+								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_CLOSE_INFO", returnMap, NewReturnVariableRoom(room, 35)))
 							}
 
 							returnMap := NewMap()
@@ -245,7 +245,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 								room.LenUsers--
 								returnMap := NewMap()
 								GetMapUserClosed(returnMap, room.LenUsers, localClient.StringLogin(), room.Name)
-								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_CLOSE_INFO", returnMap, nil))
+								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_CLOSE_INFO", returnMap, NewReturnVariableRoom(room, 35)))
 							}
 
 							returnMap := NewMap()
@@ -256,6 +256,19 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 							localClient.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, textMessage))
 							localClient.Done()
 						}
+					}
+				case "create":
+					objectMessage, _ := (*msg)["object"]
+					switch objectMessage {
+						case "room":
+							room := CreateRoom(0, (*msg)["name"].(string), "", "Unknown", "public")
+							client.server.db.Create(room)
+							client.server.db.Where("uuid = ?", (*room).UUID).First(room)
+							client.server.rooms[(*room).ID] = room
+							
+							returnMap := NewMap()
+							GetMapCustomEvent(returnMap, "You have created a room with the name " + (*msg)["name"].(string),)
+							*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_INFO_CREATE_ROOM", returnMap, nil))
 					}
 			}
 		}
