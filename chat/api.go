@@ -65,46 +65,65 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 		case "room":
 			actionMessage, _ := (*msg)["action"]
 			switch actionMessage {
-			case "join":
-				if len(client.roomUUID) > 0 {
-					localRoom := client.server.GetSpecialRoomByName(client.roomUUID)
-					if localRoom.LenUsers > 0 {
-						returnMap := NewMap()
-						localRoom.LenUsers--
-						localRoom.RemoveAt(client.id)
-						GetMapEventUserCount(returnMap, string(client.userInfo.Login), "leave", localRoom.Name, localRoom.LenUsers)
-						*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_LEAVE", returnMap, NewReturnVariableRoom(localRoom, 35)))
+				case "join":
+					if len(client.roomUUID) > 0 {
+						localRoom := client.server.GetSpecialRoomByName(client.roomUUID)
+						if localRoom.LenUsers > 0 {
+							returnMap := NewMap()
+							localRoom.LenUsers--
+							localRoom.RemoveAt(client.id)
+							GetMapEventUserCount(returnMap, string(client.userInfo.Login), "leave", localRoom.Name, localRoom.LenUsers)
+							*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_LEAVE", returnMap, NewReturnVariableRoom(localRoom, 35)))
+						}
 					}
-				}
-				returnMap := NewMap()
-				room := client.server.GetSpecialRoomByName((*msg)["room_name"].(string))
-				GetMapRoomJoin(returnMap, room.Name, room.About)
-				*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_ABOUT", returnMap, NewReturnVariableString(room.Name, 35)))
+					returnMap := NewMap()
+					room := client.server.GetSpecialRoomByName((*msg)["room_name"].(string))
+					GetMapRoomJoin(returnMap, room.Name, room.About)
+					*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_ABOUT", returnMap, NewReturnVariableString(room.Name, 35)))
 
-				client.roomUUID = room.Name
-				room.LenUsers++
-				room.Users[client.id] = client
-				returnMap = NewMap()
-				GetMapEventUserCount(returnMap, string(client.userInfo.Login), "join", room.Name, room.LenUsers)
-				*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_JOIN", returnMap, NewReturnVariableRoom(room, 35)))
+					client.roomUUID = room.Name
+					room.LenUsers++
+					room.Users[client.id] = client
+					returnMap = NewMap()
+					GetMapEventUserCount(returnMap, string(client.userInfo.Login), "join", room.Name, room.LenUsers)
+					*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_JOIN", returnMap, NewReturnVariableRoom(room, 35)))
 
-				returnMap = NewMap()
-				GetMapRoomAbout(returnMap, room.Name, room.About)
-				*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_ABOUT", returnMap, nil))
+					returnMap = NewMap()
+					GetMapRoomAbout(returnMap, room.Name, room.About)
+					*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_ABOUT", returnMap, nil))
 
-				var messageSQL []ChatMessageSQL
-				var messageJSON []ChatMessageJSON
-				returnMap = NewMap()
-				client.server.db.Table("chat_message_all").Where("room_uuid = ?", room.UUID).Order("id desc").Find(&messageSQL).Limit(10)
-				for _, mes := range messageSQL {
-					messageJSON = append(messageJSON, NewChatMessageJSON(mes.Login, mes.Message, mes.Timestamp))
-				}
-				GetMapHistoryMessages(returnMap, room.Name, &messageJSON)
-				*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_HISTORY", returnMap, nil))
+					var messageSQL []ChatMessageSQL
+					var messageJSON []ChatMessageJSON
+					returnMap = NewMap()
+					client.server.db.Table("chat_message_all").Where("room_uuid = ?", room.UUID).Order("id desc").Find(&messageSQL).Limit(10)
+					for _, mes := range messageSQL {
+						messageJSON = append(messageJSON, NewChatMessageJSON(mes.Login, mes.Message, mes.Timestamp))
+					}
+					GetMapHistoryMessages(returnMap, room.Name, &messageJSON)
+					*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_HISTORY", returnMap, nil))
 
-				returnMap = NewMap()
-				GetMapEventUserList(returnMap, room.Name, GetLoginUsers(room.Users))
-				*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_USERS", returnMap, nil))
+					returnMap = NewMap()
+					GetMapEventUserList(returnMap, room.Name, GetLoginUsers(room.Users))
+					*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_USERS", returnMap, nil))
+				
+				case "set":
+					subject, _ := (*msg)["subject"]
+					switch subject {
+						case "about":
+							room := client.server.GetSpecialRoomByName((*msg)["room_name"].(string))
+							if room != nil {
+								room.About = (*msg)["about"].(string)
+								
+								returnMap := NewMap()
+								GetMapCustomEvent(returnMap, "You have successfully changed the room description")
+								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_SET_ABOUT", returnMap, nil))
+
+								returnMap = NewMap()
+								GetMapRoomAbout(returnMap, room.Name, room.About)
+								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_SET_ABOUT", returnMap, NewReturnVariableRoom(room, 35)))
+							}
+					}
+
 			}
 		case "chat":
 			actionMessage, _ := (*msg)["action"]
