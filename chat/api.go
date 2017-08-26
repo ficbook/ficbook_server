@@ -229,15 +229,17 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 					objectMessage, _ := (*msg)["object"]
 					switch objectMessage {
 						case "bans":
-							var bans []Ban
-							returnMap := NewMap()
-							client.server.db.Find(&bans)
-							GetMapListBans(returnMap, &bans)
-							*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_GET_BANS", returnMap, nil))
+							if client.userInfo.Power >= 100 {
+								var bans []Ban
+								returnMap := NewMap()
+								client.server.db.Find(&bans)
+								GetMapListBans(returnMap, &bans)
+								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_GET_BANS", returnMap, nil))
+							}
 					}
 				case "kik":
 					localClient, isSearch := client.server.SearchUser((*msg)["user_name"].(string))
-					if isSearch {
+					if client.userInfo.Power >= 100 && isSearch {
 						if client.userInfo.Power > localClient.userInfo.Power {
 							room := client.server.GetSpecialRoomByName(localClient.roomUUID)
 							if room != nil {
@@ -258,7 +260,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 					}
 				case "ban":
 					localClient, isSearch := client.server.SearchUser((*msg)["user_name"].(string))
-					if isSearch {
+					if client.userInfo.Power >= 1000 && isSearch {
 						if client.userInfo.Power > localClient.userInfo.Power {
 							ban := Ban{
 								localClient.userInfo.Login,
