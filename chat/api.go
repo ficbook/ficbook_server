@@ -68,12 +68,14 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 				case "join":
 					if len(client.roomUUID) > 0 {
 						localRoom := client.server.GetSpecialRoomByName(client.roomUUID)
-						if localRoom.LenUsers > 0 {
-							returnMap := NewMap()
-							localRoom.LenUsers--
-							localRoom.RemoveAt(client.id)
-							GetMapEventUserCount(returnMap, string(client.userInfo.Login), "leave", localRoom.Name, localRoom.LenUsers)
-							*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_LEAVE", returnMap, NewReturnVariableRoom(localRoom, 35)))
+						if localRoom != nil {
+							if localRoom.LenUsers > 0 {
+								returnMap := NewMap()
+								localRoom.LenUsers--
+								localRoom.RemoveAt(client.id)
+								GetMapEventUserCount(returnMap, string(client.userInfo.Login), "leave", localRoom.Name, localRoom.LenUsers)
+								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_LEAVE", returnMap, NewReturnVariableRoom(localRoom, 35)))
+							}
 						}
 					}
 					returnMap := NewMap()
@@ -157,68 +159,74 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 					switch subject {
 						case "message":
 							room := client.server.GetSpecialRoomByName((*msg)["room_name"].(string))
-							if client.antiflood > 5 {
-								returnMap := NewMap()
-								GetMapCustomEvent(returnMap, client.StringLogin() + " was kicked by antiflood system")
-								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_CUSTOM_MESSAGE", returnMap, NewReturnVariableRoom(room, 35)))
-	
-								client.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, "You are kicked by antiflood system"))
-								client.Done()
-							}
-							client.antiflood++
-							isCommand := false
-							userName := string(client.userInfo.Login)
-							endMessage := (*msg)["message"].(string)
-							if endMessage[0] == '!' {
-								isCommand = true
-							}						
-							if room.Type == "system" && client.userInfo.Power < 10000 {
-								returnMap := NewMap()
-								GetMapCustomEvent(returnMap, "You do not have permission to post in this room")
-								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_SEND_MESSAGE", returnMap, nil))
-							} else {
-								returnMap := NewMap()
-								GetMapCreateMessage(returnMap, (*msg)["room_name"].(string), "", "")
-								if room.Type == "system" || isCommand {
-									userName = "System message"
-								}								
-								if isCommand {
-									messages := strings.Split(endMessage, " ")
-									switch messages[0][1:] {
-										default:
-											endMessage = "This command does not exist. Enter !help to view commands"
-										case "help":
-											endMessage = "!test - Testing the command\n!refresh - Refresh"
-										case "test":
-											endMessage = "Test message!"
-										case "refresh":
-											if client.userInfo.Power < 10000 {
-												endMessage = "You do not have permission to use this command"
-											} else {
-												endMessage = "refresh:\n\trooms"
-												if len(messages) > 1 {
-													switch messages[1] {
-														case "rooms":
-															client.server.RefreshRoom()
-															endMessage = "Комнаты обновлены"
-														}
-													}														
-											}
+							if room != nil {
+								if client.antiflood > 5 {
+									returnMap := NewMap()
+									GetMapCustomEvent(returnMap, client.StringLogin() + " was kicked by antiflood system")
+									*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_CUSTOM_MESSAGE", returnMap, NewReturnVariableRoom(room, 35)))
+		
+									client.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, "You are kicked by antiflood system"))
+									client.Done()
+								}
+								client.antiflood++
+								isCommand := false
+								userName := string(client.userInfo.Login)
+								endMessage := (*msg)["message"].(string)
+								if endMessage[0] == '!' {
+									isCommand = true
+								}						
+								if room.Type == "system" && client.userInfo.Power < 10000 {
+									returnMap := NewMap()
+									GetMapCustomEvent(returnMap, "You do not have permission to post in this room")
+									*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_SEND_MESSAGE", returnMap, nil))
+								} else {
+									returnMap := NewMap()
+									GetMapCreateMessage(returnMap, (*msg)["room_name"].(string), "", "")
+									if room.Type == "system" || isCommand {
+										userName = "System message"
+									}								
+									if isCommand {
+										messages := strings.Split(endMessage, " ")
+										switch messages[0][1:] {
+											default:
+												endMessage = "This command does not exist. Enter !help to view commands"
+											case "help":
+												endMessage = "!test - Testing the command\n!refresh - Refresh"
+											case "test":
+												endMessage = "Test message!"
+											case "refresh":
+												if client.userInfo.Power < 10000 {
+													endMessage = "You do not have permission to use this command"
+												} else {
+													endMessage = "refresh:\n\trooms"
+													if len(messages) > 1 {
+														switch messages[1] {
+															case "rooms":
+																client.server.RefreshRoom()
+																endMessage = "Комнаты обновлены"
+															}
+														}														
+												}
+										}
+									}
+									(*returnMap)["user"] = userName
+									(*returnMap)["message"] = endMessage
+									if !isCommand {
+										client.server.db.Table("chat_message_all").Create(&ChatMessageSQL{
+											Login: userName,
+											Message: endMessage,
+											Timestamp: time.Now(),
+											RoomUUID: room.UUID,
+										})
+										*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_SEND_MESSAGE", returnMap, NewReturnVariableRoom(room, 35)))
+									} else {
+										*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_SEND_ADM_MESSAGE", returnMap, nil))
 									}
 								}
-								(*returnMap)["user"] = userName
-								(*returnMap)["message"] = endMessage
-								if !isCommand {
-									client.server.db.Table("chat_message_all").Create(&ChatMessageSQL{
-										Login: userName,
-										Message: endMessage,
-										Timestamp: time.Now(),
-										RoomUUID: room.UUID,
-									})
-									*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_SEND_MESSAGE", returnMap, NewReturnVariableRoom(room, 35)))
-								} else {
-									*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_SEND_ADM_MESSAGE", returnMap, nil))
-								}
+							} else {
+								returnMap := NewMap()
+								GetMapCustomEvent(returnMap, "Room is deleted")
+								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_SEND_ERROR", returnMap, nil))
 							}
 						}
 			}
@@ -293,15 +301,32 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 					objectMessage, _ := (*msg)["object"]
 					switch objectMessage {
 						case "room":
-							room := CreateRoom(0, (*msg)["name"].(string), "", "Unknown", "public")
-							client.server.db.Create(room)
-							client.server.db.Where("uuid = ?", (*room).UUID).First(room)
-							client.server.rooms[(*room).ID] = room
-							
-							returnMap := NewMap()
-							GetMapCustomEvent(returnMap, "You have created a room with the name " + (*msg)["name"].(string),)
-							*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_INFO_CREATE_ROOM", returnMap, nil))
+							if client.userInfo.Power >= 100 {
+								room := CreateRoom(0, (*msg)["name"].(string), "", "Unknown", "public")
+								client.server.db.Create(room)
+								client.server.db.Where("uuid = ?", (*room).UUID).First(room)
+								client.server.rooms[(*room).ID] = room
+								
+								returnMap := NewMap()
+								GetMapCustomEvent(returnMap, "You have created a room with the name " + (*msg)["name"].(string),)
+								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_INFO_CREATE_ROOM", returnMap, nil))
+							}
 					}
+				case "destroy":
+					objectMessage, _ := (*msg)["object"]
+					switch objectMessage {					
+						case "room":
+							room := client.server.GetSpecialRoomByName((*msg)["room_name"].(string))
+							if room != nil {
+								client.server.db.Delete(room)
+
+								delete(client.server.rooms, room.ID)
+
+								returnMap := NewMap()
+								GetMapCustomEvent(returnMap, "Room deleted")
+								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_INFO_DELETE_ROOM", returnMap, nil))
+							}
+						}
 			}
 		}
 	} else {
