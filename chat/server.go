@@ -118,7 +118,7 @@ func (s *Server) Listen() {
 		c, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			log.Fatalf("onConnected", err)
-			return
+			//return
 		}
 
 		client := NewClient(c, s, s.db)
