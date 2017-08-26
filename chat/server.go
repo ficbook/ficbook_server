@@ -107,24 +107,25 @@ func (s *Server) sendAll(msg *Message) {
 func (s *Server) sendToClient(client *Client, msg *Message) {
 	client.Write(msg)
 }
+
+func updrageSocket(w *http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Fatalf("onConnected: %s", r.(error))
+		}
+	}()
+	return upgrader.Upgrade(*w, r, nil)
+}
+
 // Listen and serve.
 // It serves client connection and broadcast request.
 func (s *Server) Listen() {
-
 	log.Println("Listening server...")
 
 	// websocket handler
 	onConnected := func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Fatalf("onConnected error")
-			}
-		}()
-		c, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			log.Fatalf("onConnected", err)
-			//return
-		} else {
+		c, err := updrageSocket(&w, r)
+		if err == nil {
 			client := NewClient(c, s, s.db)
 			s.Add(client)
 			client.Listen()
@@ -190,6 +191,6 @@ func (s *Server) Listen() {
 	}
 }
 
-func (s Server) UpdateOnlineRooms(updateTime int) {
+func (s *Server) UpdateOnlineRooms(updateTime int) {
 	s.UpdateOnline(updateTime)
 }
