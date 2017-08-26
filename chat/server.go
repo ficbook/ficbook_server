@@ -119,11 +119,11 @@ func (s *Server) Listen() {
 		if err != nil {
 			log.Fatalf("onConnected", err)
 			//return
+		} else {
+			client := NewClient(c, s, s.db)
+			s.Add(client)
+			client.Listen()
 		}
-
-		client := NewClient(c, s, s.db)
-		s.Add(client)
-		client.Listen()
 	}
 	http.HandleFunc(s.pattern, onConnected)
 	log.Println("Created handler")
