@@ -114,6 +114,8 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 							if room != nil {
 								room.About = (*msg)["about"].(string)
 								
+								client.server.db.Save(room)
+
 								returnMap := NewMap()
 								GetMapCustomEvent(returnMap, "You have successfully changed the room description")
 								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_SET_ABOUT", returnMap, nil))
