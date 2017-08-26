@@ -115,6 +115,11 @@ func (s *Server) Listen() {
 
 	// websocket handler
 	onConnected := func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Fatalf("onConnected error")
+			}
+		}()
 		c, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			log.Fatalf("onConnected", err)
