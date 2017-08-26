@@ -2,11 +2,11 @@ package chat
 
 type Room struct {
 	ID int `json:"id"`
-	Name string `json:"name"`
+	Name string `json:"name" gorm:"not null"`
 	Topic string `json:"topic"`
-	About string `json:"about"`
-	Type string `json:"type"`
-	UUID string `json:"uuid"`
+	About string `json:"about" gorm:"type:text(500); not null" sql:"DEFAULT:'Unknown'"`
+	Type string `json:"type" gorm:"not null"`
+	UUID string `json:"uuid" gorm:"not null"`
 	Users map[int]*Client `json:"users" sql:"-"`
 	LenUsers int `json:"count_users" sql:"-"`
 }

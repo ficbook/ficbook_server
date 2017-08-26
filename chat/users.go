@@ -5,12 +5,12 @@ import (
 )
 
 type UserInfo struct {
-	//id int `gorm:"primary_key"`
-	Login []byte 
-	Password []byte
-	Power int
-	DateReg time.Time
-	DateVisit time.Time
+	ID int `gorm:"primary_key"`
+	Login []byte `gorm:"type:varbinary(255);not null"`
+	Password []byte `gorm:"type:varbinary(255);not null"`
+	Power int `gorm:"not null"`
+	DateReg time.Time `gorm:"not null"`
+	DateVisit time.Time `gorm:"not null"`
 }
 
 func (u *UserInfo) TableName() string {

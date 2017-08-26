@@ -12,11 +12,11 @@ func (self *Message) String() string {
 }
 
 type ChatMessageSQL struct {
-	ID int
-	Login string
+	ID int `gorm:"primary_key"`
+	Login string `gorm:"unique_users_login; not null"`
 	Message string
 	Timestamp time.Time `sql:"timestamp"`
-	RoomUUID string
+	RoomUUID string `gorm:"not null"`
 }
 
 func (c *ChatMessageSQL) TableName() string {

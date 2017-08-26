@@ -24,11 +24,11 @@ type ReturnVariable struct {
 }
 
 type Ban struct {
-	LoginBanned []byte `json:"login_banned"`
-	LoginBanning []byte `json:"login_baning"`
-	Reason string `json:"reason"`
-	TimeBan time.Time `json:"-"`
-	TimeExpired time.Time `json:"time_expired"`
+	LoginBanned []byte `json:"login_banned" gorm:"not null"`
+	LoginBanning []byte `json:"login_baning" gorm:"not null"`
+	Reason string `json:"reason" gorm:"not null"`
+	TimeBan time.Time `json:"-" gorm:"not null"`
+	TimeExpired time.Time `json:"time_expired" gorm:"not null"`
 }
 
 func (b *Ban) TableName() string {

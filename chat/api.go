@@ -31,11 +31,11 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 					client.server.db.Where("login = ?", (*msg)["login"].(string)).First(&userInfo)
 					if len(userInfo.Login) == 0 {
 						userInfo = UserInfo{
-							[]byte((*msg)["login"].(string)),
-							[]byte((*msg)["password"].(string)),
-							0,
-							time.Now(),
-							time.Now(),
+							Login: []byte((*msg)["login"].(string)),
+							Password: []byte((*msg)["password"].(string)),
+							Power: 0,
+							DateReg: time.Now(),
+							DateVisit: time.Now(),
 						}
 						client.server.db.Create(&userInfo)
 					}
