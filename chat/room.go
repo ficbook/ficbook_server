@@ -7,13 +7,12 @@ type Room struct {
 	About string `json:"about" gorm:"type:text(500); not null" sql:"DEFAULT:'Unknown'"`
 	Type string `json:"type" gorm:"not null"`
 	UUID string `json:"uuid" gorm:"not null"`
-	Power int `json:"-" gorm:"not null" sql:"DEFAULT:0"`
 	Users map[int]*Client `json:"users" sql:"-"`
 	LenUsers int `json:"count_users" sql:"-"`
 }
 
 //NewRoom returns the address of the room
-func NewRoom(id int, name string, topic string, about, type_room string, UUID string, power int) *Room {
+func NewRoom(id int, name string, topic string, about, type_room string, UUID string) *Room {
 	return &Room{
 		id,
 		name,
@@ -21,7 +20,6 @@ func NewRoom(id int, name string, topic string, about, type_room string, UUID st
 		about,
 		type_room,
 		UUID,
-		power,
 		make(map[int]*Client),
 		0,
 	}
@@ -36,7 +34,6 @@ func CreateRoom(id int, name string, topic string, about string, type_room strin
 		about,
 		type_room,
 		NewUUID(),
-		0,
 		make(map[int]*Client),
 		0,
 	}

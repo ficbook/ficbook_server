@@ -50,7 +50,7 @@ func NewServer(pattern string, db *gorm.DB, isRebuild *bool, createRoom *string)
 	var roomsSQL []*Room
 	db.Find(&roomsSQL)
 	for _, room := range roomsSQL {
-		rooms[room.ID] = NewRoom(room.ID, room.Name, room.Topic, room.About, room.Type, room.UUID, room.Power)
+		rooms[room.ID] = NewRoom(room.ID, room.Name, room.Topic, room.About, room.Type, room.UUID)
 	}
 
 	var roomsInts []int

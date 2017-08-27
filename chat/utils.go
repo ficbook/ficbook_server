@@ -69,7 +69,7 @@ func (s *Server) RefreshRoom() {
 	var roomsSQL []*Room
 	s.db.Find(&roomsSQL)
 	for _, room := range roomsSQL {
-		rooms[room.ID] = NewRoom(room.ID, room.Name, room.Topic, room.About, room.Type, room.UUID, room.Power)
+		rooms[room.ID] = NewRoom(room.ID, room.Name, room.Topic, room.About, room.Type, room.UUID)
 	}
 	s.rooms = rooms
 }
