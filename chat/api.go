@@ -257,6 +257,13 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_CLOSE_INFO", returnMap, NewReturnVariableRoom(room, 35)))
 							}
 
+							client.server.db.Create(&AdminHistory{
+								LoginAdmin: client.userInfo.Login,
+								LoginUser: localClient.userInfo.Login,
+								Action: "kick",
+								Date: time.Now(),
+							})
+
 							returnMap := NewMap()
 							GetMapCustomEvent(returnMap, "You kicked " + (*msg)["user_name"].(string),)
 							*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_CUSTOM_MESSAGE", returnMap, nil))
@@ -283,6 +290,13 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 								//time.Now().Add(time.Duration((*msg)["duration"].(float64)) * time.Nanosecond),
 							}
 							client.server.db.Create(&ban)
+
+							client.server.db.Create(&AdminHistory{
+								LoginAdmin: client.userInfo.Login,
+								LoginUser: localClient.userInfo.Login,
+								Action: "ban",
+								Date: time.Now(),
+							})
 
 							room := client.server.GetSpecialRoomByName(localClient.roomUUID)
 							if room != nil {
@@ -317,6 +331,13 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 								
 								client.server.UpdateListRooms()
 
+								client.server.db.Create(&AdminHistory{
+									LoginAdmin: client.userInfo.Login,
+									LoginUser: []byte("-"),
+									Action: "create_room",
+									Date: time.Now(),
+								})
+
 								returnMap := NewMap()
 								GetMapCustomEvent(returnMap, "You have created a room with the name " + (*msg)["name"].(string),)
 								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_INFO_CREATE_ROOM", returnMap, nil))
@@ -338,6 +359,13 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 									delete(client.server.rooms, room.ID)
 
 									client.server.UpdateListRooms()
+
+									client.server.db.Create(&AdminHistory{
+										LoginAdmin: client.userInfo.Login,
+										LoginUser: []byte("-"),
+										Action: "delete_room",
+										Date: time.Now(),
+									})
 
 									returnMap := NewMap()
 									GetMapCustomEvent(returnMap, "Room deleted")

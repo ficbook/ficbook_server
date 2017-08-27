@@ -8,6 +8,7 @@ import (
 	"sort"
 	"github.com/jinzhu/gorm"
 	"github.com/gorilla/websocket"
+	"fmt"
 )
 
 // Chat server.
@@ -38,8 +39,10 @@ func NewServer(pattern string, db *gorm.DB, isRebuild *bool, createRoom *string)
 	errCh := make(chan error)
 
 	if *isRebuild {
-		db.AutoMigrate(&UserInfo{},&ChatMessageSQL{}, &Ban{})
-		db.AutoMigrate(&Room{})
+		fmt.Println("Automigrate starting...")
+		db.Debug().AutoMigrate(&UserInfo{}, &ChatMessageSQL{}, &Ban{})
+		db.Debug().AutoMigrate(&Room{}, &AdminHistory{})
+		fmt.Println("Automigration completed!")
 	}
 
 	if len(*createRoom) > 0 {
