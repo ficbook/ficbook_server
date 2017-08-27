@@ -59,7 +59,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 			switch actionMessage {
 			case "get":
 				returnMap := NewMap()
-				GetMapListRooms(returnMap, client.server.rooms)
+				GetMapListRooms(returnMap, client.server.roomsList)
 				*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOMS_GET", returnMap, nil))
 			}
 		case "room":
@@ -315,6 +315,8 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 								client.server.db.Where("uuid = ?", (*room).UUID).First(room)
 								client.server.rooms[(*room).ID] = room
 								
+								client.server.UpdateListRooms()
+
 								returnMap := NewMap()
 								GetMapCustomEvent(returnMap, "You have created a room with the name " + (*msg)["name"].(string),)
 								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_INFO_CREATE_ROOM", returnMap, nil))
@@ -334,6 +336,8 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 									client.server.db.Delete(room)
 
 									delete(client.server.rooms, room.ID)
+
+									client.server.UpdateListRooms()
 
 									returnMap := NewMap()
 									GetMapCustomEvent(returnMap, "Room deleted")
@@ -389,9 +393,9 @@ func GetMapAuthError(returnMap *map[string]interface{}) {
 	(*returnMap)["error"] = "erro"
 }
 
-func GetMapListRooms(returnMap *map[string]interface{}, rooms map[int]*Room) {
+func GetMapListRooms(returnMap *map[string]interface{}, rooms *[]*Room) {
 	var returnRooms []Room
-	for _, room := range rooms {
+	for _, room := range(*rooms) {
 		returnRooms = append(returnRooms, *room)
 	}
 	(*returnMap)["type"] = "rooms"

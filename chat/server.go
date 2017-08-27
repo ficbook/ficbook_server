@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 	"strings"
+	"sort"
 	"github.com/jinzhu/gorm"
 	"github.com/gorilla/websocket"
 )
@@ -22,6 +23,7 @@ type Server struct {
 	doneCh    chan bool
 	errCh     chan error
 	db	*gorm.DB
+	roomsList *[]*Room
 }
 
 // Create new chat server.
@@ -48,7 +50,18 @@ func NewServer(pattern string, db *gorm.DB, isRebuild *bool, createRoom *string)
 	var roomsSQL []*Room
 	db.Find(&roomsSQL)
 	for _, room := range roomsSQL {
-		rooms[room.ID] = NewRoom(room.ID, room.Name, room.Topic, room.About, room.Type, room.UUID)
+		rooms[room.ID] = NewRoom(room.ID, room.Name, room.Topic, room.About, room.Type, room.UUID, room.Power)
+	}
+
+	var roomsInts []int
+	for k := range(rooms) {
+		roomsInts = append(roomsInts, k)
+	}
+	sort.Ints(roomsInts)
+
+	var roomsList []*Room 
+	for _, room := range(roomsInts) {
+		roomsList = append(roomsList, rooms[room])
 	}
 
 	return &Server{
@@ -63,6 +76,7 @@ func NewServer(pattern string, db *gorm.DB, isRebuild *bool, createRoom *string)
 		doneCh,
 		errCh,
 		db,
+		&roomsList,
 	}
 }
 

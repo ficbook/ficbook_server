@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 	u "github.com/satori/go.uuid"
+	"sort"
 )
 
 const (
@@ -68,7 +69,7 @@ func (s *Server) RefreshRoom() {
 	var roomsSQL []*Room
 	s.db.Find(&roomsSQL)
 	for _, room := range roomsSQL {
-		rooms[room.ID] = NewRoom(room.ID, room.Name, room.Topic, room.About, room.Type, room.UUID)
+		rooms[room.ID] = NewRoom(room.ID, room.Name, room.Topic, room.About, room.Type, room.UUID, room.Power)
 	}
 	s.rooms = rooms
 }
@@ -120,4 +121,18 @@ func (s *Server) SearchUser(userLogin string) (*Client, bool) {
 		}
 	}
 	return &client, isSearch
+}
+
+func (s *Server) UpdateListRooms() {
+	var roomsInts []int
+	for k := range(s.rooms) {
+		roomsInts = append(roomsInts, k)
+	}
+	sort.Ints(roomsInts)
+
+	var roomsList []*Room 
+	for _, room := range(roomsInts) {
+		roomsList = append(roomsList, s.rooms[room])
+	}
+	s.roomsList = &roomsList
 }
