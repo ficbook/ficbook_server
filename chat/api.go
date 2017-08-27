@@ -265,6 +265,10 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 							localClient.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, textMessage))
 							localClient.Done()
 						}
+					} else {
+						returnMap := NewMap()
+						GetMapCustomEvent(returnMap, "You don't have permission")
+						*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_INFO_DONT_HAVE_PERMISSION", returnMap, nil))
 					}
 				case "ban":
 					localClient, isSearch := client.server.SearchUser((*msg)["user_name"].(string))
@@ -296,6 +300,10 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 							localClient.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, textMessage))
 							localClient.Done()
 						}
+					} else {
+						returnMap := NewMap()
+						GetMapCustomEvent(returnMap, "You don't have permission")
+						*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_INFO_DONT_HAVE_PERMISSION", returnMap, nil))
 					}
 				case "create":
 					objectMessage, _ := (*msg)["object"]
@@ -310,21 +318,31 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 								returnMap := NewMap()
 								GetMapCustomEvent(returnMap, "You have created a room with the name " + (*msg)["name"].(string),)
 								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_INFO_CREATE_ROOM", returnMap, nil))
+							} else {
+								returnMap := NewMap()
+								GetMapCustomEvent(returnMap, "You don't have permission")
+								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_INFO_DONT_HAVE_PERMISSION", returnMap, nil))
 							}
 					}
 				case "destroy":
 					objectMessage, _ := (*msg)["object"]
-					switch objectMessage {					
+					switch objectMessage {			
 						case "room":
 							room := client.server.GetSpecialRoomByName((*msg)["room_name"].(string))
 							if room != nil {
-								client.server.db.Delete(room)
+								if client.userInfo.Power >= 1000 {
+									client.server.db.Delete(room)
 
-								delete(client.server.rooms, room.ID)
+									delete(client.server.rooms, room.ID)
 
-								returnMap := NewMap()
-								GetMapCustomEvent(returnMap, "Room deleted")
-								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_INFO_DELETE_ROOM", returnMap, nil))
+									returnMap := NewMap()
+									GetMapCustomEvent(returnMap, "Room deleted")
+									*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_INFO_DELETE_ROOM", returnMap, nil))
+								} else {
+									returnMap := NewMap()
+									GetMapCustomEvent(returnMap, "You don't have permission")
+									*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_INFO_DONT_HAVE_PERMISSION", returnMap, nil))
+								}
 							}
 						}
 			}
