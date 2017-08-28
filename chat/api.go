@@ -66,16 +66,13 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 			actionMessage, _ := (*msg)["action"]
 			switch actionMessage {
 				case "join":
-					if len(client.roomUUID) > 0 {
-						localRoom := client.server.GetSpecialRoomByName(client.roomUUID)
-						if localRoom != nil {
-							if localRoom.LenUsers > 0 {
-								returnMap := NewMap()
-								localRoom.LenUsers--
-								localRoom.RemoveAt(client.id)
-								GetMapEventUserCount(returnMap, string(client.userInfo.Login), "leave", localRoom.Name, localRoom.LenUsers)
-								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_LEAVE", returnMap, NewReturnVariableRoom(localRoom, 35)))
-							}
+					if client.room != nil {
+						if client.room.LenUsers > 0 {
+							returnMap := NewMap()
+							client.room.LenUsers--
+							client.room.RemoveAt(client.id)
+							GetMapEventUserCount(returnMap, client.StringLogin(), "leave", client.room.Name, client.room.LenUsers)
+							*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_LEAVE", returnMap, NewReturnVariableRoom(client.room, 35)))
 						}
 					}
 					returnMap := NewMap()
@@ -83,7 +80,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 					GetMapRoomJoin(returnMap, room.Name, room.About)
 					*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_ABOUT", returnMap, NewReturnVariableString(room.Name, 35)))
 
-					client.roomUUID = room.Name
+					client.room = room
 					room.LenUsers++
 					room.Users[client.id] = client
 					returnMap = NewMap()
@@ -249,12 +246,11 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 					localClient, isSearch := client.server.SearchUser((*msg)["user_name"].(string))
 					if client.userInfo.Power >= 100 && isSearch {
 						if client.userInfo.Power > localClient.userInfo.Power {
-							room := client.server.GetSpecialRoomByName(localClient.roomUUID)
-							if room != nil {
-								room.LenUsers--
+							if localClient.room != nil {
+								localClient.room.LenUsers--
 								returnMap := NewMap()
-								GetMapUserClosed(returnMap, room.LenUsers, localClient.StringLogin(), room.Name)
-								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_CLOSE_INFO", returnMap, NewReturnVariableRoom(room, 35)))
+								GetMapUserClosed(returnMap, localClient.room.LenUsers, localClient.StringLogin(), localClient.room.Name)
+								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_CLOSE_INFO", returnMap, NewReturnVariableRoom(localClient.room, 35)))
 							}
 
 							client.server.db.Create(&AdminHistory{
@@ -298,12 +294,11 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 								Date: time.Now(),
 							})
 
-							room := client.server.GetSpecialRoomByName(localClient.roomUUID)
-							if room != nil {
-								room.LenUsers--
+							if localClient.room != nil {
+								localClient.room.LenUsers--
 								returnMap := NewMap()
-								GetMapUserClosed(returnMap, room.LenUsers, localClient.StringLogin(), room.Name)
-								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_CLOSE_INFO", returnMap, NewReturnVariableRoom(room, 35)))
+								GetMapUserClosed(returnMap, localClient.room.LenUsers, localClient.StringLogin(), localClient.room.Name)
+								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_CLOSE_INFO", returnMap, NewReturnVariableRoom(localClient.room, 35)))
 							}
 
 							returnMap := NewMap()

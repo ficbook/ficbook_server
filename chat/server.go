@@ -184,7 +184,7 @@ func (s *Server) Listen() {
 				if ar.ReturnVariable.ReturnRoom != nil {
 					if ar.ReturnVariable.int == 35 {
 						for _, user := range(ar.ReturnVariable.ReturnRoom.Users) {
-							if user.roomUUID == ar.ReturnVariable.ReturnRoom.Name {
+							if user.room == ar.ReturnVariable.ReturnRoom {
 								s.sendToClient(user, &m)
 							}
 						}
