@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"fmt"
 	"flag"
 	"strconv"
 	"github.com/ficbook/ficbook_server/chat"
@@ -12,14 +11,6 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/yanzay/cfg"
 )
-
-func parseCommand(s *string) {
-	for true {
-		fmt.Print(">>> ")
-		fmt.Scanln(s)
-		fmt.Println(*s)
-	}
-}
 
 func main() {
 	log.SetFlags(log.Lshortfile)
@@ -45,9 +36,6 @@ func main() {
 	// Updating count of users
 	updateTime, _ := strconv.Atoi(cfgInfo["update_time"])
 	go server.UpdateOnlineRooms(updateTime)
-
-	var stringCommand string
-	go parseCommand(&stringCommand)
 	
 	log.Fatal(http.ListenAndServe(cfgInfo["server_ip"] + ":" + cfgInfo["server_port"], nil))
 }
