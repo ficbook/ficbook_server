@@ -12,3 +12,9 @@ Example: `go run main.go -config=myproject/server/config.cfg`
 Added database migration
 * -create-room `go run main.go -create-room=RoomName`. Default: ""<br>
 Creates a public room named RoomName
+<br><br>
+Available Language Packs
+| Name  | Language   |
+|:-----:|:----------:|
+| en    | English    |
+| ru    | Russian    |

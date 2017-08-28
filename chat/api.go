@@ -45,7 +45,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 					GetMapUserInfo(returnMap, userInfo.Login, userInfo.Password, userInfo.Power)
 					*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("AUTH_OK", returnMap, nil))
 				} else {
-					textMessage := "You are banned by " + string(ban.LoginBanning) + "\nReason: " + ban.Reason
+					textMessage := (*client.server.lang)["banned_info_1"] + string(ban.LoginBanning) + "\n" + (*client.server.lang)["banned_info_2"] + ban.Reason
 					client.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, textMessage))
 					client.Done()
 				}
@@ -116,7 +116,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 								client.server.db.Save(room)
 
 								returnMap := NewMap()
-								GetMapCustomEvent(returnMap, "You have successfully changed the room description")
+								GetMapCustomEvent(returnMap, (*client.server.lang)["change_about_room"])
 								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ROOM_SET_ABOUT", returnMap, nil))
 
 								returnMap = NewMap()
@@ -159,10 +159,10 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 							if room != nil {
 								if client.antiflood > 5 {
 									returnMap := NewMap()
-									GetMapCustomEvent(returnMap, client.StringLogin() + " was kicked by antiflood system")
+									GetMapCustomEvent(returnMap, client.StringLogin() + (*client.server.lang)["antiflood_info_1"])
 									*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_CUSTOM_MESSAGE", returnMap, NewReturnVariableRoom(room, 35)))
 		
-									client.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, "You are kicked by antiflood system"))
+									client.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, (*client.server.lang)["antiflood_info_2"]))
 									client.Done()
 								}
 								client.antiflood++
@@ -174,33 +174,33 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 								}						
 								if room.Type == "system" && client.userInfo.Power < 10000 {
 									returnMap := NewMap()
-									GetMapCustomEvent(returnMap, "You do not have permission to post in this room")
+									GetMapCustomEvent(returnMap, (*client.server.lang)["dont_have_permission"])
 									*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_SEND_MESSAGE", returnMap, nil))
 								} else {
 									returnMap := NewMap()
-									GetMapCreateMessage(returnMap, (*msg)["room_name"].(string), "", "")
+									GetMapCreateMessage(returnMap, (*client.server.lang)["server_name"], (*msg)["room_name"].(string), "", "")
 									if room.Type == "system" || isCommand {
-										userName = "System message"
+										userName = (*client.server.lang)["server_name"]
 									}								
 									if isCommand {
 										messages := strings.Split(endMessage, " ")
 										switch messages[0][1:] {
 											default:
-												endMessage = "This command does not exist. Enter !help to view commands"
+												endMessage = (*client.server.lang)["command_not_exist"]
 											case "help":
-												endMessage = "!test - Testing the command\n!refresh - Refresh"
+												endMessage = (*client.server.lang)["commands_1"] + "\n" + (*client.server.lang)["commands_2"]
 											case "test":
-												endMessage = "Test message!"
+												endMessage = (*client.server.lang)["commands_result_1"]
 											case "refresh":
 												if client.userInfo.Power < 10000 {
-													endMessage = "You do not have permission to use this command"
+													endMessage = (*client.server.lang)["dont_have_permission"]
 												} else {
 													endMessage = "refresh:\n\trooms"
 													if len(messages) > 1 {
 														switch messages[1] {
 															case "rooms":
 																client.server.RefreshRoom()
-																endMessage = "Комнаты обновлены"
+																endMessage = (*client.server.lang)["rooms_updated"]
 															}
 														}														
 												}
@@ -222,7 +222,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 								}
 							} else {
 								returnMap := NewMap()
-								GetMapCustomEvent(returnMap, "Room is deleted")
+								GetMapCustomEvent(returnMap, (*client.server.lang)["room_is_deleted"])
 								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_SEND_ERROR", returnMap, nil))
 							}
 						}
@@ -261,16 +261,16 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 							})
 
 							returnMap := NewMap()
-							GetMapCustomEvent(returnMap, "You kicked " + (*msg)["user_name"].(string),)
+							GetMapCustomEvent(returnMap,(*client.server.lang)["kicked_info_1"] + (*msg)["user_name"].(string),)
 							*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_CUSTOM_MESSAGE", returnMap, nil))
 
-							textMessage := "You are kicked by " + client.StringLogin() + "\nReason: " + (*msg)["message"].(string)
+							textMessage := (*client.server.lang)["kicked_info_2"] + client.StringLogin() + "\n" + (*client.server.lang)["kicked_info_3"] + (*msg)["message"].(string)
 							localClient.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, textMessage))
 							localClient.Done()
 						}
 					} else {
 						returnMap := NewMap()
-						GetMapCustomEvent(returnMap, "You don't have permission")
+						GetMapCustomEvent(returnMap, (*client.server.lang)["dont_have_permission"])
 						*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_INFO_DONT_HAVE_PERMISSION", returnMap, nil))
 					}
 				case "ban":
@@ -302,16 +302,16 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 							}
 
 							returnMap := NewMap()
-							GetMapCustomEvent(returnMap, "You banned " + (*msg)["user_name"].(string),)
+							GetMapCustomEvent(returnMap, (*client.server.lang)["banned_info_3"] + (*msg)["user_name"].(string),)
 							*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_CUSTOM_MESSAGE", returnMap, nil))
 
-							textMessage := "You are banned by " + client.StringLogin() + "\nReason: " + (*msg)["message"].(string)
+							textMessage := (*client.server.lang)["banned_info_1"] + client.StringLogin() + "\n" + (*client.server.lang)["banned_info_2"] + (*msg)["message"].(string)
 							localClient.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, textMessage))
 							localClient.Done()
 						}
 					} else {
 						returnMap := NewMap()
-						GetMapCustomEvent(returnMap, "You don't have permission")
+						GetMapCustomEvent(returnMap, (*client.server.lang)["dont_have_permission"])
 						*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_INFO_DONT_HAVE_PERMISSION", returnMap, nil))
 					}
 				case "create":
@@ -334,11 +334,11 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 								})
 
 								returnMap := NewMap()
-								GetMapCustomEvent(returnMap, "You have created a room with the name " + (*msg)["name"].(string),)
+								GetMapCustomEvent(returnMap, (*client.server.lang)["created_room"] + (*msg)["name"].(string),)
 								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_INFO_CREATE_ROOM", returnMap, nil))
 							} else {
 								returnMap := NewMap()
-								GetMapCustomEvent(returnMap, "You don't have permission")
+								GetMapCustomEvent(returnMap, (*client.server.lang)["dont_have_permission"])
 								*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_INFO_DONT_HAVE_PERMISSION", returnMap, nil))
 							}
 					}
@@ -363,11 +363,11 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 									})
 
 									returnMap := NewMap()
-									GetMapCustomEvent(returnMap, "Room deleted")
+									GetMapCustomEvent(returnMap, (*client.server.lang)["room_deleted"])
 									*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_INFO_DELETE_ROOM", returnMap, nil))
 								} else {
 									returnMap := NewMap()
-									GetMapCustomEvent(returnMap, "You don't have permission")
+									GetMapCustomEvent(returnMap, (*client.server.lang)["dont_have_permission"])
 									*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("ADM_INFO_DONT_HAVE_PERMISSION", returnMap, nil))
 								}
 							}
@@ -478,9 +478,9 @@ func GetMapCustomEvent(returnMap *map[string]interface{}, messageText string) {
 	(*returnMap)["message"] = messageText
 }
 
-func GetMapCreateMessage(returnMap *map[string]interface{}, roomName string, userName string, messageText string) {
+func GetMapCreateMessage(returnMap *map[string]interface{}, systemName string, roomName string, userName string, messageText string) {
 	if strings.Contains(userName, "") {
-		userName = "System message"
+		userName = systemName
 	}
 	(*returnMap)["type"] = "chat"
 	(*returnMap)["object"] = "message"

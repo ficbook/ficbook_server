@@ -22,12 +22,13 @@ type Server struct {
 	sendQuery chan *InfoQuery
 	doneCh    chan bool
 	errCh     chan error
-	db	*gorm.DB
+	db		  *gorm.DB
 	roomsList *[]*Room
+	lang	  *map[string]string
 }
 
 // Create new chat server.
-func NewServer(pattern string, db *gorm.DB, isRebuild *bool, createRoom *string) *Server {
+func NewServer(pattern string, db *gorm.DB, isRebuild *bool, createRoom *string, lang *map[string]string) *Server {
 	messages := []*Message{}
 	clients := make(map[int]*Client)
 	addCh := make(chan *Client)
@@ -68,6 +69,7 @@ func NewServer(pattern string, db *gorm.DB, isRebuild *bool, createRoom *string)
 		errCh,
 		db,
 		&roomsSQL,
+		lang,
 	}
 }
 

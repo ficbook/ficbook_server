@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"flag"
 	"strconv"
+	"path/filepath"
 	"github.com/ficbook/ficbook_server/chat"
-	//"./chat"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/yanzay/cfg"
@@ -20,8 +20,16 @@ func main() {
 	createRoom := flag.String("create-room", "", "Creates a room")
 	flag.Parse()
 
+	path, _ := filepath.Abs(*configPtr)
 	cfgInfo := make(map[string]string)
-	err := cfg.Load(*configPtr, cfgInfo)
+	err := cfg.Load(path, cfgInfo)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	path, _ = filepath.Abs("locals/" + cfgInfo["server_lang"] + ".cfg")
+	lang := make(map[string]string)
+	err = cfg.Load(path, lang)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -30,7 +38,7 @@ func main() {
 	defer db.Close()
 
 	// websocket server
-	server := chat.NewServer(cfgInfo["server_pattern"], db, buildDB, createRoom)
+	server := chat.NewServer(cfgInfo["server_pattern"], db, buildDB, createRoom, &lang)
 	go server.Listen()
 
 	// Updating count of users
