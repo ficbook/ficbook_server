@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 	"strings"
-	"sort"
 	"github.com/jinzhu/gorm"
 	"github.com/gorilla/websocket"
 	"fmt"
@@ -56,17 +55,6 @@ func NewServer(pattern string, db *gorm.DB, isRebuild *bool, createRoom *string)
 		rooms[room.ID] = NewRoom(room.ID, room.Name, room.Topic, room.About, room.Type, room.UUID)
 	}
 
-	var roomsInts []int
-	for k := range(rooms) {
-		roomsInts = append(roomsInts, k)
-	}
-	sort.Ints(roomsInts)
-
-	var roomsList []*Room 
-	for _, room := range(roomsInts) {
-		roomsList = append(roomsList, rooms[room])
-	}
-
 	return &Server{
 		pattern,
 		messages,
@@ -79,7 +67,7 @@ func NewServer(pattern string, db *gorm.DB, isRebuild *bool, createRoom *string)
 		doneCh,
 		errCh,
 		db,
-		&roomsList,
+		&roomsSQL,
 	}
 }
 

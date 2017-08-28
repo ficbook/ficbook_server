@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 	u "github.com/satori/go.uuid"
-	"sort"
 )
 
 const (
@@ -124,15 +123,7 @@ func (s *Server) SearchUser(userLogin string) (*Client, bool) {
 }
 
 func (s *Server) UpdateListRooms() {
-	var roomsInts []int
-	for k := range(s.rooms) {
-		roomsInts = append(roomsInts, k)
-	}
-	sort.Ints(roomsInts)
-
-	var roomsList []*Room 
-	for _, room := range(roomsInts) {
-		roomsList = append(roomsList, s.rooms[room])
-	}
+	var roomsList []*Room
+	s.db.Find(&roomsList)
 	s.roomsList = &roomsList
 }
