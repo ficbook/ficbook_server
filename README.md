@@ -14,7 +14,7 @@ Added database migration
 Creates a public room named RoomName
 <br><br>
 Available Language Packs<br>
-| Name  | Language   |
-|:-----:|:----------:|
-| en    | English    |
-| ru    | Russian    |
+| Name  | Language |
+|-------|----------|
+| en    | English  |
+| ru    | Russian  |
