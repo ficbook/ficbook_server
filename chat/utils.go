@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"time"
+	"sort"
 	u "github.com/satori/go.uuid"
 )
 
@@ -123,7 +124,20 @@ func (s *Server) SearchUser(userLogin string) (*Client, bool) {
 }
 
 func (s *Server) UpdateListRooms() {
-	var roomsList []*Room
-	s.db.Find(&roomsList)
+	var(
+		roomInts []int
+		roomsList []*Room
+	)
+
+	for k := range(s.rooms) {
+		roomInts = append(roomInts, k)
+	}
+
+	sort.Ints(roomInts)
+	
+	for k := range(roomInts) {
+		roomsList = append(roomsList, s.rooms[k])
+	}
+
 	s.roomsList = &roomsList
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/gorilla/websocket"
 	"fmt"
+	"sort"
 )
 
 // Chat server.
@@ -56,6 +57,21 @@ func NewServer(pattern string, db *gorm.DB, isRebuild *bool, createRoom *string,
 		rooms[room.ID] = NewRoom(room.ID, room.Name, room.Topic, room.About, room.Type, room.UUID)
 	}
 
+	var(
+		roomInts []int
+		roomsList []*Room
+	)
+
+	for k := range(rooms) {
+		roomInts = append(roomInts, k)
+	}
+
+	sort.Ints(roomInts)
+	
+	for _, r := range(roomInts) {
+		roomsList = append(roomsList, rooms[r])
+	}
+
 	return &Server{
 		pattern,
 		messages,
@@ -68,7 +84,7 @@ func NewServer(pattern string, db *gorm.DB, isRebuild *bool, createRoom *string,
 		doneCh,
 		errCh,
 		db,
-		&roomsSQL,
+		&roomsList,
 		lang,
 	}
 }

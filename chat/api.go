@@ -265,7 +265,14 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 												} else {
 													endMessage = (*client.server.lang)["dont_have_permission"]
 												}
+											case "rooms":
+												
+											case "settype":
+												if client.userInfo.Power >= 10000 {
 
+												} else {
+													endMessage = (*client.server.lang)["dont_have_permission"]
+												}
 										}
 									}
 									(*returnMap)["user"] = userName
