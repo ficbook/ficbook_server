@@ -244,7 +244,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 																case "2":
 																	power = 1000
 																default:
-																	endMessage = "0 - user\n1 - moder\n2 - admin"
+																	endMessage = "!setadmin userID privilegeID\n0 - user\n1 - moder\n2 - admin"
 															}
 															if power > -1 {
 																user.userInfo.Power = power
@@ -260,16 +260,47 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 															endMessage = "User is not found!"
 														}
 													} else {
-														endMessage = "0 - user\n1 - moder\n2 - admin"
+														endMessage = "!setadmin userID privilegeID\n0 - user\n1 - moder\n2 - admin"
 													}
 												} else {
 													endMessage = (*client.server.lang)["dont_have_permission"]
 												}
 											case "rooms":
-												
+												endMessage = (*client.server.lang)["commands_result_5"] + "\n\n"
+												for _, r := range(*client.server.roomsList) {
+													endMessage += strconv.Itoa((*client.server.rooms[r.ID]).ID) + " — " + (*client.server.rooms[r.ID]).Name + "\n"
+												}
 											case "settype":
 												if client.userInfo.Power >= 10000 {
-
+													if len(messages) > 2 {
+														idRoom, _ := strconv.Atoi(messages[1])
+														if room, ok := client.server.rooms[idRoom]; ok {
+															var (
+																typeRoom string
+																typeOk bool = true
+															)
+															switch messages[2] {
+																case "0":
+																	typeRoom = "public"
+																case "1":
+																	typeRoom = "system"
+																default:
+																	endMessage = "!settype roomID typeRoom\n0 - public\n1 - system"
+																	typeOk = false
+															}
+															if typeOk {
+																room.Type = typeRoom
+																client.server.db.Save(room)
+																endMessage = (*client.server.lang)["commands_result_6"]
+															} else {
+																endMessage = "!settype roomID typeRoom\n0 - public\n1 - system"
+															}
+														} else {
+															endMessage = "Room is not found!"
+														}
+													} else {
+														endMessage = "!settype roomID typeRoom\n0 - public\n1 - system"
+													}
 												} else {
 													endMessage = (*client.server.lang)["dont_have_permission"]
 												}
