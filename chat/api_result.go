@@ -17,6 +17,7 @@ type ReturnVariable struct {
 	string
 	int
 	ReturnRoom *Room
+	ReturnClient *Client
 }
 
 func NewAPIReturn(typeAPI string, interfaceAPI *map[string]interface{}, returnVariable *ReturnVariable) *APIReturn {
@@ -33,6 +34,7 @@ func NewReturnVariable(chatMessageJSON *[]ChatMessageJSON, text string, code int
 		text,
 		code,
 		nil,
+		nil,
 	}
 }
 
@@ -41,6 +43,7 @@ func NewReturnVariableString(text string, code int) *ReturnVariable {
 		nil,
 		text,
 		code,
+		nil,
 		nil,
 	}
 }
@@ -51,5 +54,16 @@ func NewReturnVariableRoom(room *Room, code int) *ReturnVariable {
 		"",
 		code,
 		room,
+		nil,
+	}
+}
+
+func NewReturnVariableClient(client *Client, code int) *ReturnVariable {
+	return &ReturnVariable{
+		nil,
+		"",
+		code,
+		nil,
+		client,
 	}
 }

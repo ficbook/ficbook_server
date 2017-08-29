@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"sort"
 	"strconv"
 	"time"
 	"strings"
@@ -189,6 +190,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 												endMessage = (*client.server.lang)["command_not_exist"]
 											case "help":
 												endMessage = (*client.server.lang)["commands_1"] + "\n" + (*client.server.lang)["commands_2"]
+												endMessage += "\n"+ (*client.server.lang)["commands_3"] + "\n" + (*client.server.lang)["commands_4"]
 											case "test":
 												endMessage = (*client.server.lang)["commands_result_1"]
 											case "refresh":
@@ -204,6 +206,66 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 															}
 														}														
 												}
+											case "users":
+												endMessage = (*client.server.lang)["commands_result_3"] + "\n\n"
+												var intsList []int
+												for k := range(client.room.Users) {
+													intsList = append(intsList, k)
+												}
+												sort.Ints(intsList)
+												for _, u := range(intsList) {
+													endMessage += strconv.Itoa(client.room.Users[u].id) + " — " + client.room.Users[u].StringLogin() + "\n"
+												}
+											case "admins":
+												endMessage = (*client.server.lang)["commands_result_4"] + "\n\n"
+												var intsList []int
+												for k := range(client.room.Users) {
+													intsList = append(intsList, k)
+												}
+												sort.Ints(intsList)
+												for _, u := range(intsList) {
+													if client.room.Users[u].userInfo.Power <= 0 {
+														continue
+													}
+													endMessage += strconv.Itoa(client.room.Users[u].id) + " — " + GetStringPrivilege(client.server.lang, client.room.Users[u].userInfo.Power) + " — " + client.room.Users[u].StringLogin() + "\n"
+												}
+											case "setadmin":
+												if client.userInfo.Power >= 10000 {
+													if len(messages) > 2 {
+														idUser, _ := strconv.Atoi(messages[1])
+														user, ok := client.room.Users[idUser]
+														if ok {
+															power := -1
+															switch messages[2] {
+																case "0":
+																	power = 0
+																case "1":
+																	power = 100
+																case "2":
+																	power = 1000
+																default:
+																	endMessage = "0 - user\n1 - moder\n2 - admin"
+															}
+															if power > -1 {
+																user.userInfo.Power = power
+																client.server.db.Save(user)
+
+																endMessage = (*client.server.lang)["set_admin_result_1_1"] + user.StringLogin() + (*client.server.lang)["set_admin_result_1_2"] + GetStringPrivilege(client.server.lang, user.userInfo.Power)
+
+																returnMap := NewMap()																
+																GetMapCreateMessage(returnMap, "", user.room.Name, user.StringLogin(), client.StringLogin() + (*client.server.lang)["set_admin_result_2"] + GetStringPrivilege(client.server.lang, user.userInfo.Power))
+																*mapAPIReturn = append(*mapAPIReturn, NewAPIReturn("CHAT_SEND_MESSAGE", returnMap, NewReturnVariableClient(user, 75)))
+															}
+														} else {
+															endMessage = "User is not found!"
+														}
+													} else {
+														endMessage = "0 - user\n1 - moder\n2 - admin"
+													}
+												} else {
+													endMessage = (*client.server.lang)["dont_have_permission"]
+												}
+
 										}
 									}
 									(*returnMap)["user"] = userName
@@ -506,4 +568,17 @@ func GetMapUserClosed(returnMap *map[string]interface{}, userCount int, userName
 	(*returnMap)["users_count"] = userCount
 	(*returnMap)["user_name"] = userName
 	(*returnMap)["room_name"] = roomName
+}
+
+func GetStringPrivilege(lang *map[string]string, power int) string {
+	if power >= 10000 {
+		return (*lang)["superadmin"]
+	}
+	if power >= 1000 {
+		return (*lang)["admin"]
+	}
+	if power >= 100 {
+		return (*lang)["moder"]
+	}
+	return (*lang)["user"]
 }

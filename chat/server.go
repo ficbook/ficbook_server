@@ -179,6 +179,10 @@ func (s *Server) Listen() {
 							}
 						}
 					}
+				} else if ar.ReturnVariable.ReturnClient != nil {
+					if ar.ReturnVariable.int == 75 {
+						s.sendToClient(ar.ReturnVariable.ReturnClient, &m)
+					}
 				}
 			} else {
 				s.sendToClient(client, &m)
