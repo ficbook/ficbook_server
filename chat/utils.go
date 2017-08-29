@@ -135,7 +135,7 @@ func (s *Server) UpdateListRooms() {
 
 	sort.Ints(roomInts)
 	
-	for k := range(roomInts) {
+	for _, k := range(roomInts) {
 		roomsList = append(roomsList, s.rooms[k])
 	}
 
