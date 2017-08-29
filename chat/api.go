@@ -248,7 +248,7 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 															}
 															if power > -1 {
 																user.userInfo.Power = power
-																client.server.db.Save(user)
+																client.server.db.Save(user.userInfo)
 
 																endMessage = (*client.server.lang)["set_admin_result_1_1"] + user.StringLogin() + (*client.server.lang)["set_admin_result_1_2"] + GetStringPrivilege(client.server.lang, user.userInfo.Power)
 
