@@ -1,4 +1,6 @@
-# How to compile the project?
+#Ficbook websocket server
+
+## How to compile the project?
 First of all, we need to download some libraries. To do this, we use the go get:<br>
 `go get github.com/jinzhu/gorm"`<br>
 `go get github.com/jinzhu/gorm/dialects/mysql`<br>
