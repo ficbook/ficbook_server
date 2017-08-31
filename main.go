@@ -13,8 +13,6 @@ import (
 )
 
 func main() {
-	log.SetFlags(log.Lshortfile)
-
 	configPtr := flag.String("config", "config.cfg", "Path to the configuration file")
 	buildDB := flag.Bool("database-init", false, "Update the database table")
 	createRoom := flag.String("create-room", "", "Creates a room")
@@ -27,7 +25,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	path, _ = filepath.Abs("locals/" + cfgInfo["server_lang"] + ".cfg")
+	path, _ = filepath.Abs(filepath.Dir("locals/" + cfgInfo["server_lang"] + ".cfg"))
 	lang := make(map[string]string)
 	err = cfg.Load(path, lang)
 	if err != nil {
