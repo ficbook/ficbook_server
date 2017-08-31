@@ -10,6 +10,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/yanzay/cfg"
+	"runtime"
 )
 
 func main() {
@@ -25,7 +26,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	path, _ = filepath.Abs(filepath.Dir("locals/" + cfgInfo["server_lang"] + ".cfg"))
+	if runtime.GOOS == "windows" {
+		path, _ = filepath.Abs(filepath.Dir("locals/" + cfgInfo["server_lang"] + ".cfg"))
+	} else {
+		path, _ = filepath.Abs(filepath.Dir("locals\\" + cfgInfo["server_lang"] + ".cfg"))
+	}
 	lang := make(map[string]string)
 	err = cfg.Load(path, lang)
 	if err != nil {
