@@ -13,6 +13,7 @@ type Server struct {
 	messages    []*Message
 	tempClients map[int]*Client
 	clients   	map[string]*Client
+	rooms		map[int]*Room
 	addCh   	chan *Client
 	delCh  		chan *Client
 	sendQuery 	chan *Message
@@ -23,19 +24,28 @@ type Server struct {
 
 // Create new chat server.
 func NewServer(db *gorm.DB) *Server {
+	var roomsSQL []*Room
+
 	messages := []*Message{}
 	tempClients := make(map[int]*Client)
 	clients := make(map[string]*Client)
+	rooms := make(map[int]*Room)
 	addCh := make(chan *Client)
 	delCh := make(chan *Client)
 	sendQuery := make(chan *Message)
 	doneCh := make(chan bool)
 	errCh := make(chan error)
 
+	db.Find(&roomsSQL)
+	for _, room := range(roomsSQL) {
+		rooms[room.ID] = NewRoom(room.ID, room.Name)
+	}
+
 	return &Server{
 		messages,
 		tempClients,
 		clients,
+		rooms,
 		addCh,
 		delCh,
 		sendQuery,
@@ -108,6 +118,7 @@ func (s *Server) Listen() {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/users/sign_in", s.Users_SignIn).Methods("POST")
+	router.HandleFunc("/rooms/list", s.Rooms_List).Methods("GET")
 	http.Handle("/", router)	
 
 //	http.HandleFunc("/ws", wsListen)

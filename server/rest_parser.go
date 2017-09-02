@@ -8,9 +8,17 @@ import (
 	"encoding/json"
 )
 
+func (s *Server) Rooms_List(w http.ResponseWriter, r *http.Request) {
+	var rooms []Room
+	for _, room := range(s.rooms) {
+		rooms = append(rooms, *room)
+	}
+	bytes, _ := json.Marshal(&rooms)
+	w.Write(bytes)
+}
+
 func (s *Server) Users_SignIn(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-
 	m := make(map[string]interface{})
 	m["id"] = rand.Intn(10)
 	m["token"] = RandStringRunes(20)
