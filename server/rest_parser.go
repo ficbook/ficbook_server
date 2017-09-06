@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"encoding/json"
 	"strconv"
+	"time"
 )
 
 func (s *Server) Rooms_List(w http.ResponseWriter, r *http.Request) {
@@ -27,6 +28,16 @@ func (s *Server) Rooms_GetRoom(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("This room does not exist"))
+	}
+}
+
+func (s *Server) Rooms_Create(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	if len(r.Form.Get("name")) > 0 {
+		s.db.Create(&Room{
+			Name: r.Form.Get("name"),
+			CreatedAt: time.Now(),
+		})
 	}
 }
 
