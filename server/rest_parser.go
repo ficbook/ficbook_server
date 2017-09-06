@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"fmt"
 	"encoding/json"
+	"strconv"
 )
 
 func (s *Server) Rooms_List(w http.ResponseWriter, r *http.Request) {
@@ -15,6 +16,18 @@ func (s *Server) Rooms_List(w http.ResponseWriter, r *http.Request) {
 	}
 	bytes, _ := json.Marshal(&rooms)
 	w.Write(bytes)
+}
+
+func (s *Server) Rooms_GetRoom(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if room, ok := s.rooms[id]; ok && err == nil {
+		b, _ := json.Marshal(room)
+		w.Write(b)
+	} else {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("This room does not exist"))
+	}
 }
 
 func (s *Server) Users_SignIn(w http.ResponseWriter, r *http.Request) {

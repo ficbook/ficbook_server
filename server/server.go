@@ -118,7 +118,8 @@ func (s *Server) Listen() {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/users/sign_in", s.Users_SignIn).Methods("POST")
-	router.HandleFunc("/rooms/list", s.Rooms_List).Methods("GET")
+	router.HandleFunc("/rooms", s.Rooms_List).Methods("GET")
+	router.HandleFunc("/rooms/{id}", s.Rooms_GetRoom).Methods("GET")
 	http.Handle("/", router)	
 
 //	http.HandleFunc("/ws", wsListen)
