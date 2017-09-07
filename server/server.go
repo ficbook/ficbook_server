@@ -120,6 +120,7 @@ func (s *Server) Listen() {
 	router.HandleFunc("/users/sign_in", s.Users_SignIn).Methods("POST")
 	router.HandleFunc("/rooms", s.Rooms_List).Methods("GET")
 	router.HandleFunc("/rooms/{id}", s.Rooms_GetRoom).Methods("GET")
+	router.HandleFunc("/rooms/{id}", s.Rooms_Delete).Methods("DELETE")
 	router.HandleFunc("/rooms/new", s.Rooms_Create).Methods("POST")
 	http.Handle("/", router)	
 

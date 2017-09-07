@@ -34,10 +34,22 @@ func (s *Server) Rooms_GetRoom(w http.ResponseWriter, r *http.Request) {
 func (s *Server) Rooms_Create(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	if len(r.Form.Get("name")) > 0 {
-		s.db.Create(&Room{
+		room := Room{
 			Name: r.Form.Get("name"),
 			CreatedAt: time.Now(),
-		})
+		}
+		s.db.Create(&room)
+		b, _ := json.Marshal(&room)
+		w.Write(b)
+	}
+}
+
+func (s *Server) Rooms_Delete(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idRoom, err := strconv.Atoi(vars["id"])
+	if room, ok := s.rooms[idRoom]; ok && err == nil {
+		s.db.Delete(room)
+		delete(s.rooms, idRoom)
 	}
 }
 
