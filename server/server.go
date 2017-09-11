@@ -122,6 +122,8 @@ func (s *Server) Listen() {
 	router.HandleFunc("/rooms/{id}", s.Rooms_GetRoom).Methods("GET")
 	router.HandleFunc("/rooms/{id}", s.Rooms_Delete).Methods("DELETE")
 	router.HandleFunc("/rooms/new", s.Rooms_Create).Methods("POST")
+	router.HandleFunc("/rooms/<id>/messages", s.Messages_Get).Methods("GET")
+	router.HandleFunc("/rooms/<id>/messages", s.Messages_Post).Methods("POST")
 	http.Handle("/", router)	
 
 //	http.HandleFunc("/ws", wsListen)
