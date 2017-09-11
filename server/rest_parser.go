@@ -9,12 +9,20 @@ import (
 	"encoding/json"
 	"strconv"
 	"time"
+	"sort"
 )
 
 func (s *Server) Rooms_List(w http.ResponseWriter, r *http.Request) {
-	var rooms []Room
-	for _, room := range(s.rooms) {
-		rooms = append(rooms, *room)
+	var (
+		rooms []Room
+		keys []int
+	)
+	for k := range(s.rooms) {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+	for _, key := range(keys) {
+		rooms = append(rooms, *s.rooms[key])
 	}
 	bytes, _ := json.Marshal(&rooms)
 	w.Write(bytes)
@@ -40,6 +48,9 @@ func (s *Server) Rooms_Create(w http.ResponseWriter, r *http.Request) {
 			CreatedAt: time.Now(),
 		}
 		s.db.Create(&room)
+		s.db.First(&room).Order("id desc")
+		fmt.Println(room)
+		s.rooms[room.ID] = &room
 		b, _ := json.Marshal(&room)
 		w.Write(b)
 	}
