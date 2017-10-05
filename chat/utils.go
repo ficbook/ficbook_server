@@ -94,16 +94,16 @@ func (s *Server) UpdateOnline(updateTime int) {
 			for _, user := range(room.Users) {
 				checkMap := NewMap()
 				(*checkMap)["type"] = "check"
-				err := user.ws.WriteJSON(checkMap)
-				if err != nil {
-					fmt.Print("ERROR: ")
-					fmt.Println(err)
-					user.ws.Close()
-					room.RemoveAt(user.id)
-				} else {
-					user.antiflood = 0
-					count++
-				}
+				defer func() {
+					if r := recover(); r != nil {
+						fmt.Print("ERROR: ")
+						fmt.Println(r.(error))
+						user.ws.Close()
+						room.RemoveAt(user.id)
+					}
+				}()
+				user.antiflood = 0
+				count++
 			}
 			room.LenUsers = count
 		}
