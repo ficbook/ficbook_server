@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"flag"
 	"strconv"
+	"os"
+	"io"
 	"path/filepath"
 	"github.com/ficbook/ficbook_server/chat"
 	"github.com/jinzhu/gorm"
@@ -27,12 +29,26 @@ func main() {
 		log.Fatal(err)
 	}
 
-	path, _ = filepath.Abs("locals/" + cfgInfo["server_lang"] + ".cfg")
-	lang := make(map[string]string)
-	err = cfg.Load(path, lang)
+	locals, err := http.Get(cfgInfo["path_lang"])
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer locals.Body.Close()
+	fileLang, err := os.Create("tmplocfb")
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = io.Copy(fileLang, locals.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	lang := make(map[string]string)
+	err = cfg.Load("tmplocfb", lang)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fileLang.Close()
+	os.Remove("tmplocfb")
 
 	db, err := gorm.Open(cfgInfo["db_server"], cfgInfo["db_user"] + ":" + cfgInfo["db_password"] + "@/" + cfgInfo["db_db"] + "?charset=utf8mb4&parseTime=true")
 	defer db.Close()
