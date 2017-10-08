@@ -133,3 +133,7 @@ func (c *Client) listenRead() {
 		}
 	}
 }
+
+func (c *Client) ClearBufferID() {
+	maxId = 0
+}

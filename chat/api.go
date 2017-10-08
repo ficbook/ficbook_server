@@ -197,13 +197,23 @@ func ParseAPI(client *Client, msg *map[string]interface{}, mapAPIReturn *[]*APIR
 												if client.userInfo.Power < 10000 {
 													endMessage = (*client.server.lang)["dont_have_permission"]
 												} else {
-													endMessage = "refresh:\n\trooms"
+													endMessage = "refresh:\n\trooms\n\tusers"
 													if len(messages) > 1 {
 														switch messages[1] {
 															case "rooms":
 																client.server.RefreshRoom()
 																endMessage = (*client.server.lang)["rooms_updated"]
+															case "users":
+																textMessage := client.StringLogin() + " kicked all server"
+																for _, lRoom := range(client.server.rooms) {
+																	for _, lUser := range(lRoom.Users) {
+																		lUser.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, textMessage))
+																		lUser.Done()
+																	}
+																}
+																client.ClearBufferID()
 															}
+
 														}														
 												}
 											case "users":
