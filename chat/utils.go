@@ -96,12 +96,14 @@ func (s *Server) UpdateOnline(updateTime int) {
 				(*checkMap)["type"] = "check"
 				defer func() {
 					if r := recover(); r != nil {
-						fmt.Print("ERROR: ")
+						fmt.Print("ERROR Update online: ")
 						fmt.Println(r.(error))
 						user.ws.Close()
 						room.RemoveAt(user.id)
 					}
+					
 				}()
+				user.ws.WriteJSON(checkMap)
 				user.antiflood = 0
 				count++
 			}
