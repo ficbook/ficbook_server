@@ -15,8 +15,6 @@ import (
 )
 
 func main() {
-	log.SetFlags(log.Lshortfile)
-
 	configPtr := flag.String("config", "config.cfg", "Path to the configuration file")
 	buildDB := flag.Bool("database-init", false, "Update the database table")
 	createRoom := flag.String("create-room", "", "Creates a room")
