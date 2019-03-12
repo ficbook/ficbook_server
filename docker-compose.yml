@@ -1,0 +1,13 @@
+version: '2.1'
+
+volumes:
+  postgres-ficbook-data:
+    driver: local
+
+services:
+  postgres-ficbook:
+    image: postgres:10
+    ports:
+      - 127.0.0.1:5432:5432
+    volumes:
+      - postgres-ficbook-data:/var/lib/postgresql/data
